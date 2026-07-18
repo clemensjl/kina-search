@@ -1,14 +1,18 @@
-"""Prueft alle Weidian-Links auf Funktionalitaet (HTTP, kein LLM noetig).
+"""Prueft alle Weidian-Links auf Funktionalitaet (HTTP, kein LLM noetig) und
+extrahiert dabei Hauptbild + Preis fuer Items, denen beides im Sheet fehlt.
 
 Live-Erkennung: Weidian rendert bei existierenden Items einen SSR-Datenblob
 (u.a. &#34;shopName&#34;) ins HTML; bei geloeschten Items fehlt er.
 Taobao/1688 sind ohne Login nicht zuverlaessig pruefbar -> bleiben ungeprueft.
 
-Ergebnis: data/link_status.json  {"wd:<id>": "ok"|"dead"}  (inkrementell, resume-faehig)
-Danach scripts/prune_dead.py ausfuehren, um tote Items aus items.json zu entfernen.
+Ergebnis: data/link_status.json  {"wd:<id>": "ok"|"dead"}
+          data/item_meta.json    {"wd:<id>": {"img": url, "price": cny}}
+Danach: enrich.py (Bilder/Preise auffuellen), prune_dead.py (tote Items raus).
 """
+import html as htmllib
 import json
 import random
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -19,6 +23,10 @@ import requests
 ROOT = Path(__file__).resolve().parent.parent
 ITEMS = ROOT / "site" / "items.json"
 STATUS = ROOT / "data" / "link_status.json"
+META = ROOT / "data" / "item_meta.json"
+
+IMG_RE = re.compile(r"https://si\.geilicdn\.com/[^\"'\s\\]+?\.(?:jpg|jpeg|png|webp)[^\"'\s\\]*")
+PRICE_RE = re.compile(r'"(?:price|minPrice|itemPrice|priceText)"\s*:\s*"?(\d+(?:\.\d+)?)"?')
 
 LIVE_MARKER = "&#34;shopName&#34;"
 DEAD_MARKER = "商品不存在"
@@ -27,6 +35,7 @@ WORKERS = 3
 
 lock = threading.Lock()
 status: dict[str, str] = {}
+meta: dict[str, dict] = {}
 counters = {"ok": 0, "dead": 0, "unknown": 0, "err_streak": 0}
 local = threading.local()
 cooldown_until = 0.0
@@ -67,6 +76,22 @@ def check(pid: str) -> str:
             if r.status_code != 200:
                 return "unknown"
             if LIVE_MARKER in r.text:
+                u = htmllib.unescape(r.text)
+                img = IMG_RE.search(u)
+                price = PRICE_RE.search(u)
+                m = {}
+                if img:
+                    m["img"] = img.group(0)
+                if price:
+                    try:
+                        cny = float(price.group(1))
+                        # Weidian liefert Preise teils in Fen (Cent)
+                        m["price"] = cny / 100 if cny > 10000 else cny
+                    except ValueError:
+                        pass
+                if m:
+                    with lock:
+                        meta[f"wd:{pid}"] = m
                 return "ok"
             if DEAD_MARKER in r.text:
                 return "dead"
@@ -95,7 +120,8 @@ def worker(pid: str):
         done = counters["ok"] + counters["dead"] + counters["unknown"]
         if done % 1000 == 0:
             STATUS.write_text(json.dumps(status), encoding="utf-8")
-            print(f"  {done} geprueft: {counters['ok']} ok, {counters['dead']} tot, {counters['unknown']} unklar", flush=True)
+            META.write_text(json.dumps(meta), encoding="utf-8")
+            print(f"  {done} geprueft: {counters['ok']} ok, {counters['dead']} tot, {counters['unknown']} unklar, {len(meta)} meta", flush=True)
     time.sleep(random.uniform(0.4, 0.9))
 
 
@@ -103,6 +129,8 @@ def main():
     data = json.loads(ITEMS.read_text(encoding="utf-8"))
     items = data["items"] if isinstance(data, dict) else data
     pids = sorted({it["pid"] for it in items if it.get("pf") == "wd" and it.get("pid")})
+    if META.exists():
+        meta.update(json.loads(META.read_text(encoding="utf-8")))
     if STATUS.exists():
         # unknown-Eintraege erneut pruefen, nur ok/dead sind final
         prev = json.loads(STATUS.read_text(encoding="utf-8"))
@@ -124,7 +152,8 @@ def main():
     with ThreadPoolExecutor(max_workers=WORKERS) as ex:
         list(ex.map(worker, rest))
     STATUS.write_text(json.dumps(status), encoding="utf-8")
-    print(f"fertig: {counters['ok']} ok, {counters['dead']} tot, {counters['unknown']} unklar")
+    META.write_text(json.dumps(meta), encoding="utf-8")
+    print(f"fertig: {counters['ok']} ok, {counters['dead']} tot, {counters['unknown']} unklar, {len(meta)} meta")
 
 
 if __name__ == "__main__":

@@ -36,14 +36,16 @@ export const AGENTS: Agent[] = [
   { n: "EastMallBuy", t: { "*": "https://eastmallbuy.com/index/item/index.html?searchlang=en&url={url}" } },
 ];
 
+// Nur QC-Quellen mit echtem Produkt-Deep-Link (UUFinds/FinderQC sind
+// Paste-basiert und landen sonst auf der Startseite)
 export const QCDBS: Agent[] = [
   { n: "FindQC", t: { wd: "https://findqc.com/detail/WD/{id}", tb: "https://findqc.com/detail/TB/{id}", al: "https://findqc.com/detail/AL/{id}" } },
   { n: "JadeShip", t: { wd: "https://www.jadeship.com/item/weidian/{id}", tb: "https://www.jadeship.com/item/taobao/{id}", al: "https://www.jadeship.com/item/1688/{id}" } },
-  { n: "UUFinds", t: { "*": "https://www.uufinds.com/qc" } },
   { n: "Kakobuy QC", t: { "*": "https://www.kakobuy.com/item/details?url={url}" } },
   { n: "Litbuy QC", t: { wd: "https://litbuy.com/products/details?id={id}&channel=WEIDIAN", tb: "https://litbuy.com/products/details?id={id}&channel=TAOBAO", al: "https://litbuy.com/products/details?id={id}&channel=1688" } },
+  { n: "Oopbuy QC", t: { wd: "https://www.oopbuy.com/product/weidian/{id}", tb: "https://www.oopbuy.com/product/1/{id}", al: "https://www.oopbuy.com/product/0/{id}" } },
+  { n: "Hoobuy QC", t: { wd: "https://hoobuy.com/product/2/{id}", tb: "https://hoobuy.com/product/1/{id}", al: "https://hoobuy.com/product/0/{id}" } },
   { n: "OOTDBuy QC", t: { wd: "https://www.ootdbuy.com/goods/details?id={id}&channel=weidian", tb: "https://www.ootdbuy.com/goods/details?id={id}&channel=taobao", al: "https://www.ootdbuy.com/goods/details?id={id}&channel=1688" } },
-  { n: "FinderQC", t: { "*": "https://finderqc.com/" } },
 ];
 
 export function rawUrl(it: Pick<Item, "pf" | "pid" | "u">): string {

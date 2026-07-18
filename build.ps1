@@ -8,8 +8,10 @@ Set-Location $PSScriptRoot
 
 python scripts\fetch.py
 python scripts\parse.py
+python scripts\enrich.py
 python scripts\thumbs.py
 python scripts\compact.py
+python scripts\prune_dead.py
 
 if ($Deploy) {
     git add -A
