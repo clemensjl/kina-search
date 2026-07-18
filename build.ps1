@@ -9,6 +9,7 @@ Set-Location $PSScriptRoot
 python scripts\fetch.py
 python scripts\parse.py
 python scripts\thumbs.py
+python scripts\compact.py
 
 if ($Deploy) {
     git add -A

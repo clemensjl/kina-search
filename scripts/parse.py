@@ -68,6 +68,102 @@ CATEGORIES = [
 ]
 
 
+BRANDS = [
+    ("Polo Ralph Lauren", r"polo ralph lauren|ralph lauren|\brl\b|big pony"),
+    ("Louis Vuitton", r"louis vuitton|\blv\b|louiis"),
+    ("Stone Island", r"stone island"),
+    ("CP Company", r"c\.?p\.? company"),
+    ("Fear of God", r"fear of god|essentials|\bfog\b"),
+    ("The North Face", r"north face|\btnf\b"),
+    ("Chrome Hearts", r"chrome hearts?"),
+    ("Vivienne Westwood", r"vivienne|westwood"),
+    ("New Balance", r"new balance|\bnb\d{3,4}\b"),
+    ("Maison Margiela", r"margiela|\bmm6\b|tabi"),
+    ("Canada Goose", r"canada goose"),
+    ("Dr. Martens", r"dr\.? ?martens"),
+    ("Palm Angels", r"palm angels"),
+    ("Denim Tears", r"denim tears"),
+    ("Syna World", r"syna ?world"),
+    ("Off-White", r"off.?white"),
+    ("Rick Owens", r"rick owens"),
+    ("Comme des Garcons", r"comme des|\bcdg\b"),
+    ("Audemars Piguet", r"audemars|royal oak|\bap\b"),
+    ("Patek Philippe", r"patek|nautilus"),
+    ("Richard Mille", r"richard mille|richards?\b"),
+    ("Rolex", r"rolex|relox|\brol\b|daytona|datejust|submariner"),
+    ("Tom Ford", r"tom ford"),
+    ("Bottega Veneta", r"bottega"),
+    ("Saint Laurent", r"saint laurent|\bysl\b"),
+    ("Michael Kors", r"michael kors"),
+    ("Tommy Hilfiger", r"tommy"),
+    ("Calvin Klein", r"calvin klein|\bck\b"),
+    ("Jordan", r"jordan|\baj\d|\bj\d{1,2}s?\b"),
+    ("Nike", r"\bnike\b|air force|\baf1\b|air ?max|dunk|nocta|techfleece|tech fleece|shox"),
+    ("Adidas", r"adidas|samba|gazelle|campus|superstar"),
+    ("Yeezy", r"yeezy"),
+    ("Gucci", r"gucci"),
+    ("Dior", r"\bdior\b|b30|b22|b23|b27"),
+    ("Chanel", r"chanel"),
+    ("Prada", r"prada"),
+    ("Balenciaga", r"balenciaga|balenci|\bblcg\b|3xl"),
+    ("Corteiz", r"corteiz|\bcrtz\b"),
+    ("Trapstar", r"trapstar"),
+    ("Supreme", r"supreme"),
+    ("BAPE", r"\bbape\b|bapesta|bathing ape"),
+    ("Moncler", r"moncler|monclair"),
+    ("Carhartt", r"carhartt"),
+    ("Stussy", r"stussy|stüssy"),
+    ("Amiri", r"amiri"),
+    ("Burberry", r"burberry"),
+    ("Hellstar", r"hellstar"),
+    ("Sp5der", r"sp5der|spider hoodie"),
+    ("Casablanca", r"casablanca"),
+    ("Arc'teryx", r"arc.?teryx"),
+    ("Patagonia", r"patagonia"),
+    ("Asics", r"asics"),
+    ("UGG", r"\bugg\b"),
+    ("Timberland", r"timberland"),
+    ("Birkenstock", r"birkenstock"),
+    ("Converse", r"converse|chuck taylor"),
+    ("Vans", r"\bvans\b"),
+    ("Omega", r"\bomega\b|seamaster|speedmaster"),
+    ("Cartier", r"cartier|santos"),
+    ("Versace", r"versace"),
+    ("Fendi", r"fendi"),
+    ("Hermes", r"hermes|birkin"),
+    ("Goyard", r"goyard"),
+    ("Celine", r"celine"),
+    ("Loewe", r"loewe"),
+    ("Miu Miu", r"miu miu"),
+    ("Armani", r"armani"),
+    ("Hugo Boss", r"hugo boss|\bboss\b"),
+    ("Lacoste", r"lacoste"),
+    ("Lululemon", r"lulu"),
+    ("Under Armour", r"under armou?r"),
+    ("Puma", r"\bpuma\b"),
+    ("Salomon", r"salomon"),
+    ("On Running", r"on cloud|on running"),
+    ("Hoka", r"\bhoka\b"),
+    ("Apple", r"\bapple\b|iphone|ipad|airpods|apple watch"),
+    ("Dyson", r"dyson"),
+    ("Bose", r"\bbose\b"),
+    ("JBL", r"\bjbl\b"),
+    ("Sony", r"\bsony\b|playstation"),
+    ("Samsung", r"samsung"),
+    ("Beats", r"\bbeats\b"),
+    ("Marshall", r"marshall"),
+    ("LEGO", r"\blego\b"),
+]
+BRANDS_C = [(name, re.compile(pat, re.I)) for name, pat in BRANDS]
+
+
+def brand_of(name):
+    for b, rx in BRANDS_C:
+        if rx.search(name):
+            return b
+    return ""
+
+
 def norm_text(s):
     if not s:
         return ""
@@ -92,27 +188,98 @@ def is_shop_link(u):
     return any(host == h or host.endswith("." + h) for h in SHOP_HOSTS)
 
 
-def dedup_key(u):
-    """Produkt-URL aus Agent-Wrappern ziehen, damit gleiche Items matchen."""
-    inner = None
+def extract_ref(u, depth=0):
+    """(platform, item_id) aus beliebiger Agent-/Shop-URL. platform: wd|tb|al."""
+    if depth > 3:
+        return "", ""
     try:
-        qs = parse_qs(urlparse(u).query)
+        p = urlparse(u)
+        qs = parse_qs(p.query)
     except ValueError:
-        return u
-    for k in ("productLink", "url", "goodsUrl", "product_link", "link"):
-        if k in qs and qs[k] and qs[k][0].startswith("http"):
-            inner = unquote(qs[k][0])
-            break
-    target = inner or u
+        return "", ""
+    host = p.netloc.lower()
+    # innere Original-URL aus Agent-Wrappern
+    for k in ("url", "productLink", "goodsUrl", "product_link", "link", "goods_url"):
+        if k in qs and qs[k] and unquote(qs[k][0]).startswith("http"):
+            ref = extract_ref(unquote(qs[k][0]), depth + 1)
+            if ref[0]:
+                return ref
+    # direkte Marktplatz-URLs
+    if "weidian.com" in host:
+        for k in ("itemID", "itemId", "item_id", "id"):
+            if k in qs and qs[k][0].isdigit():
+                return "wd", qs[k][0]
+    if "taobao.com" in host or "tmall.com" in host:
+        if "id" in qs and qs["id"][0].isdigit():
+            return "tb", qs["id"][0]
+    if "1688.com" in host:
+        if m := re.search(r"/offer/(\d+)", p.path):
+            return "al", m.group(1)
+    # Agent-Formate: id-Param + Plattform-Param
+    pid = next((qs[k][0] for k in ("id", "itemID", "goodsId", "item_id") if k in qs and qs[k][0].isdigit()), None)
+    plat = next((qs[k][0].lower() for k in ("shop_type", "platform", "channel", "source", "shoptype") if k in qs), "")
+    if pid and plat:
+        if plat.startswith(("weidian", "wd")):
+            return "wd", pid
+        if plat.startswith(("taobao", "tb")):
+            return "tb", pid
+        if plat.startswith(("1688", "ali", "al")):
+            return "al", pid
+    # pfadbasierte Agent-Formate
+    if m := re.search(r"/(?:product|item)/(weidian|taobao|tmall|1688|wd|tb|ali_1688)/(\d+)", p.path, re.I):
+        g = m.group(1).lower()
+        return ("wd" if g in ("weidian", "wd") else "al" if "1688" in g else "tb"), m.group(2)
+    # Zahlencodes sind PRO AGENT verschieden (verifiziert Jul 2026)
+    host_codes = {
+        "hoobuy.com": {"1": "tb", "2": "wd", "0": "al", "3": "al"},
+        "usfans.com": {"3": "wd", "2": "tb", "1": "al"},
+        "oopbuy.com": {"1": "tb", "0": "al"},
+    }
+    if m := re.search(r"/product/(\d)/(\d+)$", p.path):
+        for h, codes in host_codes.items():
+            if (host == h or host.endswith("." + h)) and m.group(1) in codes:
+                return codes[m.group(1)], m.group(2)
+    return "", ""
+
+
+def dedup_key(u):
+    pf, pid = extract_ref(u)
+    if pf:
+        return f"{pf}:{pid}"
     try:
-        p = urlparse(target)
-        iq = parse_qs(p.query)
-        for k in ("itemID", "itemId", "id"):
-            if k in iq:
-                return f"{p.netloc.lower()}::{iq[k][0]}"
+        p = urlparse(u)
         return f"{p.netloc.lower()}{p.path}".rstrip("/")
     except ValueError:
-        return target
+        return u
+
+
+CUR_SYM = {"¥": "CNY", "￥": "CNY", "cny": "CNY", "rmb": "CNY", "$": "USD", "usd": "USD",
+           "€": "EUR", "eur": "EUR", "£": "GBP", "gbp": "GBP"}
+PRICE_VAL_RE = re.compile(
+    r"([$€£¥￥]|USD|EUR|CNY|RMB|GBP)\s*(\d[\d.,]*)|(\d[\d.,]*)\s*([$€£¥￥]|USD|EUR|CNY|RMB|GBP)", re.I
+)
+
+
+def parse_price(p):
+    """(Wert, Waehrungscode) aus Preis-Rohstring; (None, '') wenn nicht lesbar."""
+    m = PRICE_VAL_RE.search(p or "")
+    if not m:
+        return None, ""
+    cur = (m.group(1) or m.group(4) or "").strip().lower()
+    num = (m.group(2) or m.group(3)).rstrip(".,")
+    if "," in num and "." in num:
+        if num.rfind(",") > num.rfind("."):
+            num = num.replace(".", "").replace(",", ".")
+        else:
+            num = num.replace(",", "")
+    elif "," in num:
+        head, _, tail = num.rpartition(",")
+        num = f"{head.replace(',', '')}.{tail}" if len(tail) <= 2 else num.replace(",", "")
+    try:
+        v = round(float(num), 2)
+    except ValueError:
+        return None, ""
+    return v, CUR_SYM.get(cur, "USD")
 
 
 def categorize(*texts):
@@ -227,15 +394,25 @@ def extract_items(grid, source_name, tab_name):
                             break
                     if img:
                         break
-            items.append({
+            pf, pid = extract_ref(u)
+            pv, pc = parse_price(price)
+            it = {
                 "n": name[:120],
-                "p": price,
+                "b": brand_of(name),
                 "c": categorize(tab_name, section, name),
                 "i": img,
-                "u": u,
                 "s": source_name,
                 "t": norm_text(tab_name)[:40],
-            })
+            }
+            if pf:
+                it["pf"], it["pid"] = pf, pid
+            else:
+                it["u"] = u
+            if pv is not None:
+                it["pv"], it["pc"] = pv, pc
+            elif price:
+                it["p"] = price
+            items.append(it)
     return items
 
 
@@ -302,6 +479,18 @@ def grid_from_xlsx(path):
     return tabs
 
 
+def fetch_rates():
+    """EUR-Basis-Kurse fuer Preisumrechnung; Fallback auf feste Naeherungen."""
+    import requests as rq
+
+    try:
+        r = rq.get("https://api.frankfurter.app/latest?from=EUR&to=CNY,USD,GBP", timeout=15)
+        rates = r.json()["rates"]
+        return {"CNY": rates["CNY"], "USD": rates["USD"], "GBP": rates["GBP"], "EUR": 1.0}
+    except Exception:
+        return {"CNY": 7.8, "USD": 1.08, "GBP": 0.85, "EUR": 1.0}
+
+
 def main():
     report = json.loads((ROOT / "data" / "fetch_report.json").read_text(encoding="utf-8"))
     names = {r["id"]: r.get("name", r["id"]) for r in report}
@@ -329,23 +518,37 @@ def main():
             all_items.extend(items)
             per_source[src] = per_source.get(src, 0) + len(items)
 
-    # Dedup: gleiche Produkt-URL innerhalb gleicher Quelle
+    # Dedup: gleiches Produkt (Plattform+ID bzw. URL) QUELLEN-UEBERGREIFEND.
+    # Viele Sheets sind Klone desselben Betreibers; erste Quelle gewinnt,
+    # fehlende Felder werden aus Duplikaten aufgefuellt.
     seen = {}
     unique = []
     for it in all_items:
-        key = (it["s"], dedup_key(it["u"]))
+        key = f"{it['pf']}:{it['pid']}" if "pf" in it else dedup_key(it["u"])
         if key in seen:
             prev = seen[key]
             if not prev["i"] and it["i"]:
                 prev["i"] = it["i"]
-            if not prev["p"] and it["p"]:
-                prev["p"] = it["p"]
+            if "pv" not in prev and "pv" in it:
+                prev["pv"], prev["pc"] = it["pv"], it["pc"]
+                prev.pop("p", None)
+            if prev["c"] == "Sonstiges" and it["c"] != "Sonstiges":
+                prev["c"] = it["c"]
+            if len(it["n"]) > len(prev["n"]) + 8 and not prev["b"]:
+                prev["n"], prev["b"] = it["n"], it["b"]
             continue
         seen[key] = it
         unique.append(it)
 
+    # Standard-Reihenfolge: Marke -> Name; markenlose ans Ende
+    unique.sort(key=lambda it: (it["b"] == "", it["b"].lower(), it["n"].lower()))
+
+    meta = {"built": __import__("datetime").date.today().isoformat(), "rates": fetch_rates()}
     OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(json.dumps(unique, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    OUT.write_text(
+        json.dumps({"meta": meta, "items": unique}, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
     print(f"items total={len(all_items)} unique={len(unique)}  -> {OUT} ({OUT.stat().st_size // 1024} KB)")
     for src, n in sorted(per_source.items(), key=lambda x: -x[1]):
         print(f"  {src}: {n}")

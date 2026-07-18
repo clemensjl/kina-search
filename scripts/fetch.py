@@ -93,8 +93,14 @@ class BrowserHTTP:
             pass
 
 
-def get_tabs(http, sheet_id):
-    r = http.get(f"https://docs.google.com/spreadsheets/d/{sheet_id}/htmlview")
+def sheet_base(sheet_id, published):
+    if published:
+        return f"https://docs.google.com/spreadsheets/d/e/{sheet_id}/pubhtml"
+    return f"https://docs.google.com/spreadsheets/d/{sheet_id}/htmlview"
+
+
+def get_tabs(http, sheet_id, published=False):
+    r = http.get(sheet_base(sheet_id, published))
     if r.status_code != 200 or "accounts.google" in r.url:
         raise RuntimeError(f"htmlview HTTP {r.status_code}")
     title_m = re.search(r"<title>(.*?)</title>", r.text, re.S)
@@ -114,13 +120,12 @@ def get_tabs(http, sheet_id):
     return title, tabs
 
 
-def fetch_gsheet(http, sheet_id):
-    title, tabs = get_tabs(http, sheet_id)
+def fetch_gsheet(http, sheet_id, published=False):
+    title, tabs = get_tabs(http, sheet_id, published)
     fetched = []
     for t in tabs:
         r = http.get(
-            f"https://docs.google.com/spreadsheets/d/{sheet_id}/htmlview/sheet"
-            f"?headers=false&gid={t['gid']}",
+            f"{sheet_base(sheet_id, published)}/sheet?headers=false&gid={t['gid']}",
             timeout=300,
         )
         if r.status_code == 200 and "html" in r.headers.get("content-type", ""):
@@ -145,7 +150,7 @@ def fetch_one(http, s):
         if s.get("type") == "drive_xlsx":
             res = fetch_drive_xlsx(http, sid)
         else:
-            res = fetch_gsheet(http, sid)
+            res = fetch_gsheet(http, sid, published=s.get("type") == "published")
     except Exception as e:
         res = {"id": sid, "ok": False, "error": str(e)[:200]}
     res["name"] = s.get("name", res.get("title", sid))

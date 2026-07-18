@@ -19,6 +19,72 @@ sources:
     name: "GILLYS MEGA FINDS"
     type: drive_xlsx
 
+# --- Neue Quellen (Web-Recherche 18.07.2026, geprueft via check_sources.py) ---
+  - id: 14FQ6Q4eDR-SEDWqn-od4Agi33cEiYcNcGTvGVyPvhUo   # BEST QUALITY REP SNEAKERS (36k+ Links)
+  - id: 1b2MXO4QzB7PQCuC7l6P0d9mJVS7QSlpLsGtDhA7-EbI   # 10,000+ Best Rep (s10)
+  - id: 1PsB0Sc3qzGR3X-m-hOxFwv40KjaDhKymUB5yAKxMbmk   # 10,000+ Best Fashion (s6)
+  - id: 1qqw0xK8hicUSf5dmgvlQnS41FBPm9tjs6jqah_TIGuY   # 10,000+ Best REP (s4)
+  - id: 1Vs190yOAkrQ04LQb6l_Lnr_oTA0ny4CI3PJ_0B4_6zs   # 10,000+ Best (s7)
+  - id: 1ZEFzxEpGC-EB87U2ebCzIuPCW2cVJ3AM1-3_-x3rDpo   # 10,000+ OOPBUY Fashion Find
+  - id: 14wx88KjcXAX3djKTMZiKcskHi8RBbySGb8PmZmXYXik   # Zylar333
+  - id: 1zXGyHltAdDbwhj6W8l_vOuaUnkjoJa6n5cmjKA1rR2Q   # USFANS by supreme.finds
+  - id: 1MMHXYXDhMTb3-3kaj_uDpFearLq-5tXPhUP8IfRicBo   # BYMASE ARCHIVE KAKOBUY
+  - id: 1bsrlIqoqYednUI7HSxrdRMR85vcFzrcd--q8dMskT_s   # BYMASE OG KAKOBUY
+  - id: 1tqxySnLFbkgkzmyHu_pXEotT-jbKA64DDG9sMpI6qyE   # Kakofinds
+  - id: 16r3QguCgolrpnoYOCYVLLzVCtxJLGtOUCguqX2JoBvI   # OOPBUY SPREADSHEET
+  - id: 17azsyAwjQxYf7D7oHzLpMlZN1YLgcrshaq81mj8GA34   # KAKOBUY spreadsheet
+  - id: 1fTuF2VAPFmg08CWAKr4tYiT19Ekp9fI6v_v-arCM7JI   # JOYAGOO-Findz 10k+
+  - id: 19MF-afQZ7BzeT4MSd_Bza0Q02HrhwNMk6MJEPcdHSjE   # Premium Finds Joyagoo
+  - id: 1l9naRqF3nOLgGNzwyGwqsI0cSqQTPfgYqLeLoxw3aA4   # CNfans by Candor
+  - id: 1iZUaUHScZ85YdTlAgbRxE-jCCyEBQTImn5ARtI183uA   # OrientDig loreefinds
+  - id: 1-EPvecFShPsP6nsfzgfTFzW4ajUs7rPz5u5lTtO2E1s   # yves ultimate
+  - id: 1iFGWkrU4nRKf58RlC0sb2aYe7ddcJpYKkAPaVGjDD9k   # My Big Rep List
+  - id: 1nIl_UCHzW6eYA3AsECU6-8xyeIq7pf8zA3OAnoOzVk8   # Sugargoo Newfindsbuy
+  - id: 1OieqIxPRSGy8xgmN7IU6PMHGxPg4HOxtRRNneNIsGG0   # REPS
+  - id: 1B7hhulfpKeqVQYOAldqlCn6TYWLLwEcD-4EO77FzDeQ   # Spoils rep
+  - id: 1mvSc9pYvDjqM14ZHhOx6Wm99ZTaQ4eewStxkb3JrEL8   # FASHION REPS
+  - id: 1PJZgPFMEXWh5uPGSBTjE-eLF9ccO401KlgC3_DNYo8Y   # ACBuy (AllChinaBuy)
+  - id: 1e2cDOttuZtU5N9o695y-LtyXX_b8-tHUirUryX_dXhE   # Oopbuy Newfindsbuy
+  - id: 1AuWHLMWrfOR1jRTU_6UEay8JLh-jvbU1xzADsdIMsS0   # OOPBUY CHILEBROSKI
+  - id: 1BFj10D4gc32Ft8YwW5E6nJ9fFh8wIJxxG0yI79rx0Xk   # GorpCore&MIL OOPBUY
+  - id: 1oX3h11kVYaolV2R7bksl32K4ZSvxM4_Y-qxWSfV1Jj4   # Kakobuy Spreadsheet
+  - id: 1mtVtOh22L4W0BVBmGnjmVptZNIqupx_amEEe9pCXf_U   # CNFans 2024
+  - id: 1UWW5tnFU_9ENnHjScnC7ohWx9bgwER92gSEvV57dJlk   # CNFans LoyaltyReps
+  - id: 1rkVmMKqemrWClg1HW_j4gpDi-rje05h0DZA9xfknlC8   # Stannie MuleBuy
+  - id: 1RhNBOPWUVz0alwyOLcsccKYLOLhOG1t1KfqXH4P-wFY   # The Best MuleBuy
+  - id: 1CikVGkEhkWaGuYcZw6TxBufy6uDUMGD1qigQQmBSPm0   # Mulebuy & RepFamIndia
+  - id: 1HdKAMVB9I-KJMpIOLtZYAvjeR3BJ4PkwgEZy6_L7_jg   # Womens MuleBuy
+  - id: 1AC3M6wmaSDcyIS0xX4LQ5MLkMaUdK7X5tONL2EpicAs   # Mens MuleBuy
+  - id: 1HQ-gzu9xdNn-PD-kdSxuAPJlG7B2ulSickZ3ufkGH-8   # OGUSFans
+  - id: 1Ih_34tcSWdYbpuuP9YgGIfoGh5Q1JhPAVBcnx8-ln4M   # Lovegobuy (FR, 38 Tabs)
+  - id: 1mpzC39kT6xNciy43BDL8w0kETj_XNYYvlOhpMVkEmCI   # BEST ALLCHINABUY
+  - id: 1u1zZ3mZ3-ZU4FcGA542ArFh9iRYw0bgxE0Kmp8M_NKk   # AllChinaBuy Spreadsheets
+  - id: 1LoS4B3ct7xME7n0SpQVwh0RUxuFAxTfOYa-Jzr7UFQQ   # Allchinabuy Summer Sale
+  - id: 1dQXryiB1w2RaMehuBtY2_0QD9NO9PNn5YwXx9TP59dY   # Snowys All AGENT
+  - id: 1oJcQkNlUZAjr8Gb4xc49GBjygEZEeYVZG6cdQ3gTaww   # Sugargoo High Quality Only
+  - id: 1te7oiWg49Z3siibpP-sePk7Q-FV1BG28kGz7TBe1o2c   # Official FashionReps
+  - id: 19N7XLyDhwnYXXmQtwX-vN26bhJo7PGOUQZduj0_Cu_c   # Rep Findz
+  - id: 1xonvEFSnfQWGx0dGpj9xIVSaT7tc36CvJ7Cagbvhv2I   # Taobao Spreadsheet
+  - id: 16tMZGSrr3D6ao8V-cIyeE5PTEYf1XQEQ9rALGAjoWls   # Buy Sheet (14 Tabs)
+  - id: 1g4uQVNJ3ROFmcOT6tSKDspnRvmYAPIQroRBMP5sb3X8   # 100+ Items Haul
+  - id: 1IPF-mWjit-UtTlY09WQLTSdKwHjUu_CU0JvYWOAK8Ls   # fullcloset rep list
+  - id: 1DAQ__r9RNx4mHgcDoXvzda9-0d_yeP7hqXdRUZ67EtM   # ULTIMATE Pandabuy (1750+)
+# published Sheets (eigene ID-Klasse /d/e/...)
+  - id: 2PACX-1vQjdI_xnY_ETqPcC_ze2X3Mt3pH7j3A1QT9khFlgYq49MefDzDVR_7FIl8ytdUTrdnCLr_3UlNkxOOq
+    type: published   # Ultimate Kakobuy Sneaker (33k+ Links Tab 1)
+  - id: 2PACX-1vTSlQlv3xu41NMqawZkL1WQCKZAQHKcBOrJcSF26cU__vMDcaVdJWb68bSVWTcpecrOmza2bBvbGImp
+    type: published   # BEST BATCH REP SNEAKERS
+  - id: 2PACX-1vTNuaTRHkOKJvnSWLFODrrOqbsYiUvF5098CLU06nPLC2QSeWPhrGoP50f6pRH8B4xAGJrPeTH3PTE4
+    type: published   # BEST QUALITY REPS SNEAKERS
+  - id: 2PACX-1vSFUXeXPmXDt8qPm_pyYpYbXmLH8XR1SRwdlRLy65Kq6AnR4vlksbHodb_LuPUcxkgTMjWuIPVqxP2i
+    type: published   # ORIGINAL QUALITY HACOO SHOES
+  - id: 2PACX-1vQrZ4_MJLLgq1GwqE_LpYF_IT6BOh9DDt5kLQitBHgM6tigoBe_DnVjBgIIvznzzAthW4-yVW4_CWbA
+    type: published   # BEST QUALITY REP SNEAKERS (Hoobuy x)
+  - id: 2PACX-1vQ1xsobKtYV5wLmWyyKuoIkrgJmssYBHUDTc__BnNgeIGfNgnIJ9p_2y5c0JD0iSGGhKbP_LBrI7sKA
+    type: published   # BEST BATCH REP SNEAKERS (Kakobuy x)
+  - id: 2PACX-1vSLWS3IMY5_fqxR1Xcrhc7naKFXHUB2jA3lnvjmbUEmpFI79-WHCcl22IM6WrKY42Q48rnwhEaiY9xd
+    type: published   # The Ultimate Pandabuy Spreadsheet
+
 # Login-gesperrte Sheets: laufen ueber die gespeicherte Browser-Session (auth: true).
 # Erster Lauf oeffnet ein Chrome-Fenster fuer den Google-Login.
   - id: 1d0lK3WHIJnNHBmqoTVXXcY2JyqfeQEzE1NeEulx-AJQ

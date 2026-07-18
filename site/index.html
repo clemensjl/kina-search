@@ -89,7 +89,7 @@ main{max-width:1400px;margin:0 auto;padding:18px 20px 60px}
 }
 .card:hover{border-color:var(--ink);border-top-color:var(--stamp)}
 .thumb{
-  aspect-ratio:1;background:var(--paper);position:relative;overflow:hidden;
+  aspect-ratio:1;background:#fff;position:relative;overflow:hidden;
   border-bottom:1px solid var(--line);
 }
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -107,7 +107,7 @@ main{max-width:1400px;margin:0 auto;padding:18px 20px 60px}
 .meta{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin-top:auto}
 .price{
   font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:500;
-  color:var(--stamp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;
+  color:var(--stamp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;
 }
 .src{
   font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);
@@ -140,7 +140,81 @@ footer{
 @media(prefers-reduced-motion:no-preference){
   .card{animation:in .18s ease both}
   @keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .modal{animation:pop .16s ease both}
+  @keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 }
+
+/* ---------- Produktseite (Modal) ---------- */
+.modal-back{
+  position:fixed;inset:0;background:rgba(22,34,46,.6);z-index:50;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:4vh 16px;overflow-y:auto;
+}
+.modal{
+  background:var(--card);border-radius:8px;max-width:880px;width:100%;
+  border-top:3px solid var(--stamp);position:relative;
+}
+.modal-close{
+  position:absolute;top:10px;right:10px;z-index:2;
+  width:34px;height:34px;border:1.5px solid var(--line-strong);border-radius:6px;
+  background:var(--card);color:var(--ink);cursor:pointer;
+  font-family:"IBM Plex Mono",monospace;font-size:16px;line-height:1;
+}
+.modal-close:hover{border-color:var(--stamp);color:var(--stamp)}
+.modal-grid{display:grid;grid-template-columns:340px 1fr}
+@media(max-width:720px){.modal-grid{grid-template-columns:1fr}}
+.modal-img{
+  background:#fff;border-right:1px solid var(--line);border-radius:8px 0 0 0;
+  display:flex;align-items:center;justify-content:center;
+  aspect-ratio:1;overflow:hidden;
+}
+@media(max-width:720px){.modal-img{border-right:none;border-bottom:1px solid var(--line);border-radius:8px 8px 0 0;max-height:46vh}}
+.modal-img img{width:100%;height:100%;object-fit:contain}
+.modal-img .ph{
+  font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:56px;
+  color:var(--line-strong);
+}
+.modal-info{padding:20px 22px 22px;min-width:0}
+.modal-brand{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--stamp);margin-bottom:5px;
+}
+.modal-name{
+  font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:24px;
+  line-height:1.15;margin-bottom:10px;padding-right:30px;
+}
+.modal-price{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+.modal-price .eur{
+  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:26px;color:var(--stamp);
+}
+.modal-price .cny{
+  font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--muted);
+}
+.modal-meta{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);
+  margin-bottom:14px;line-height:1.7;
+}
+.mod-sec{
+  font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:13px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+  border-top:1px solid var(--line);padding-top:12px;margin:12px 0 8px;
+}
+.linkgrid{display:flex;flex-wrap:wrap;gap:6px}
+.linkgrid a{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;text-decoration:none;
+  padding:6px 10px;border:1.5px solid var(--line-strong);border-radius:6px;
+  color:var(--ink);background:var(--card);white-space:nowrap;
+}
+.linkgrid a:hover{border-color:var(--stamp);color:var(--stamp)}
+.orig-btn{
+  display:inline-block;text-decoration:none;
+  font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:15px;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:9px 18px;border-radius:6px;background:var(--ink);color:var(--paper);
+  border:1.5px solid var(--ink);
+}
+.orig-btn:hover{background:var(--stamp);border-color:var(--stamp)}
+body.modal-open{overflow:hidden}
 </style>
 </head>
 <body>
@@ -154,7 +228,7 @@ footer{
       <input id="q" type="search" placeholder="Suchen: Marke, Item, Kategorie &hellip;" autocomplete="off" autofocus>
       <select id="src" aria-label="Quelle"><option value="">Alle Quellen</option></select>
       <select id="sort" aria-label="Sortierung">
-        <option value="rel">Sortierung: Standard</option>
+        <option value="rel">Sortierung: Marke</option>
         <option value="pa">Preis aufsteigend</option>
         <option value="pd">Preis absteigend</option>
         <option value="name">Name A&ndash;Z</option>
@@ -181,17 +255,65 @@ footer{
 const $=s=>document.querySelector(s);
 const BATCH=120;
 let DATA=[], view=[], shown=0, activeCat="";
+let RATES={CNY:7.8,USD:1.08,GBP:0.85,EUR:1};
 
 const fold=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 
-/* ersten USD-/Dollar-Wert als Sortierzahl ziehen, sonst beliebige Zahl */
-function priceNum(p){
-  if(!p) return NaN;
-  let m=p.match(/(?:\$|USD)\s*([\d.,]+)/i) || p.match(/([\d.,]+)\s*(?:\$|USD)/i);
-  if(!m) m=p.match(/([\d]+(?:[.,]\d+)?)/);
-  if(!m) return NaN;
-  return parseFloat(m[1].replace(/,(?=\d{3}\b)/g,"").replace(",","."));
+/* Agent-Link-Templates: {id} = Item-ID, {url} = urlencodierte Original-URL.
+   pf: wd=Weidian, tb=Taobao, al=1688 */
+/* Verifiziert Jul 2026 (cn-links/JadeShip/Live-Checks). CNFans: keine neuen
+   Weidian-Orders seit 01/26 — Buttons bleiben (QC/Historie weiter nutzbar). */
+const AGENTS=[
+  {n:"Kakobuy",t:{"*":"https://www.kakobuy.com/item/details?url={url}"}},
+  {n:"CNFans",t:{wd:"https://cnfans.com/product/?shop_type=weidian&id={id}",tb:"https://cnfans.com/product/?shop_type=taobao&id={id}",al:"https://cnfans.com/product/?shop_type=ali_1688&id={id}"}},
+  {n:"ACBuy",t:{wd:"https://www.acbuy.com/product?id={id}&source=WD",tb:"https://www.acbuy.com/product?id={id}&source=TB",al:"https://www.acbuy.com/product?id={id}&source=AL"}},
+  {n:"Mulebuy",t:{wd:"https://mulebuy.com/product/?shop_type=weidian&id={id}",tb:"https://mulebuy.com/product/?shop_type=taobao&id={id}",al:"https://mulebuy.com/product/?shop_type=ali_1688&id={id}"}},
+  {n:"Oopbuy",t:{wd:"https://www.oopbuy.com/product/weidian/{id}",tb:"https://www.oopbuy.com/product/1/{id}",al:"https://www.oopbuy.com/product/0/{id}"}},
+  {n:"Hoobuy",t:{wd:"https://hoobuy.com/product/2/{id}",tb:"https://hoobuy.com/product/1/{id}",al:"https://hoobuy.com/product/0/{id}"}},
+  {n:"Joyagoo",t:{wd:"https://joyagoo.com/product?id={id}&platform=WEIDIAN",tb:"https://joyagoo.com/product?id={id}&platform=TAOBAO",al:"https://joyagoo.com/product?id={id}&platform=ALI_1688"}},
+  {n:"USFans",t:{wd:"https://www.usfans.com/product/3/{id}",tb:"https://www.usfans.com/product/2/{id}",al:"https://www.usfans.com/product/1/{id}"}},
+  {n:"Superbuy",t:{"*":"https://www.superbuy.com/en/page/buy?from=search-input&url={url}"}},
+  {n:"Sugargoo",t:{"*":"https://www.sugargoo.com/#/home/productDetail?productLink={url}"}},
+  {n:"CSSBuy",t:{wd:"https://www.cssbuy.com/item-micro-{id}.html",tb:"https://www.cssbuy.com/item-{id}.html",al:"https://www.cssbuy.com/item-1688-{id}.html"}},
+  {n:"AllChinaBuy",t:{"*":"https://www.allchinabuy.com/en/page/buy?from=search-input&url={url}"}},
+  {n:"Orientdig",t:{wd:"https://orientdig.com/product/?shop_type=weidian&id={id}",tb:"https://orientdig.com/product/?shop_type=taobao&id={id}",al:"https://orientdig.com/product/?shop_type=ali_1688&id={id}"}},
+  {n:"LovegoBuy",t:{wd:"https://www.lovegobuy.com/product?id={id}&shop_type=weidian",tb:"https://www.lovegobuy.com/product?id={id}&shop_type=taobao",al:"https://www.lovegobuy.com/product?id={id}&shop_type=ali_1688"}},
+  {n:"OOTDBuy",t:{wd:"https://www.ootdbuy.com/goods/details?id={id}&channel=weidian",tb:"https://www.ootdbuy.com/goods/details?id={id}&channel=taobao",al:"https://www.ootdbuy.com/goods/details?id={id}&channel=1688"}},
+  {n:"HipoBuy",t:{wd:"https://hipobuy.com/goods/details?id={id}&channel=WEIDIAN",tb:"https://hipobuy.com/goods/details?id={id}&channel=TAOBAO",al:"https://hipobuy.com/goods/details?id={id}&channel=1688"}},
+  {n:"PonyBuy",t:{wd:"https://www.ponybuy.com/en-gb/goods?product_id={id}&platform=weidian",tb:"https://www.ponybuy.com/en-gb/goods?product_id={id}&platform=taobao",al:"https://www.ponybuy.com/en-gb/goods?product_id={id}&platform=1688"}},
+  {n:"LoongBuy",t:{"*":"https://www.loongbuy.com/product-details?url={url}"}},
+  {n:"iTaoBuy",t:{"*":"https://www.itaobuy.com/product-detail?url={url}"}},
+  {n:"Basetao",t:{wd:"https://www.basetao.com/best-taobao-agent-service/products/agent/weidian/{id}.html",tb:"https://www.basetao.com/best-taobao-agent-service/products/agent/taobao/{id}.html",al:"https://www.basetao.com/best-taobao-agent-service/products/agent/1688/{id}.html"}},
+  {n:"EastMallBuy",t:{"*":"https://eastmallbuy.com/index/item/index.html?searchlang=en&url={url}"}},
+];
+
+/* QC-Foto-Datenbanken (Jul 2026: qc.photos + finding.photos tot).
+   Templates: pro Plattform ({id}) oder generisch ({url}). */
+const QCDBS=[
+  {n:"FindQC",t:{wd:"https://findqc.com/detail/WD/{id}",tb:"https://findqc.com/detail/TB/{id}",al:"https://findqc.com/detail/AL/{id}"}},
+  {n:"JadeShip",t:{wd:"https://www.jadeship.com/item/weidian/{id}",tb:"https://www.jadeship.com/item/taobao/{id}",al:"https://www.jadeship.com/item/1688/{id}"}},
+  {n:"UUFinds",t:{"*":"https://www.uufinds.com/qc"}},
+  {n:"Kakobuy QC",t:{"*":"https://www.kakobuy.com/item/details?url={url}"}},
+  {n:"CNFans QC",t:{wd:"https://cnfans.com/product/?shop_type=weidian&id={id}",tb:"https://cnfans.com/product/?shop_type=taobao&id={id}",al:"https://cnfans.com/product/?shop_type=ali_1688&id={id}"}},
+  {n:"OOTDBuy QC",t:{wd:"https://www.ootdbuy.com/goods/details?id={id}&channel=weidian",tb:"https://www.ootdbuy.com/goods/details?id={id}&channel=taobao",al:"https://www.ootdbuy.com/goods/details?id={id}&channel=1688"}},
+  {n:"FinderQC",t:{"*":"https://finderqc.com/"}},
+];
+
+function rawUrl(it){
+  if(it.pf==="wd") return "https://weidian.com/item.html?itemID="+it.pid;
+  if(it.pf==="tb") return "https://item.taobao.com/item.htm?id="+it.pid;
+  if(it.pf==="al") return "https://detail.1688.com/offer/"+it.pid+".html";
+  return it.u||"";
 }
+function fill(tpl,it){
+  return tpl.replace("{id}",it.pid||"").replace("{url}",encodeURIComponent(rawUrl(it)));
+}
+function eurOf(it){
+  if(it.pv==null||!RATES[it.pc]) return NaN;
+  return it.pv/RATES[it.pc];
+}
+const fmtEUR=v=>"€ "+v.toLocaleString("de-AT",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtCNY=v=>"¥ "+v.toLocaleString("de-AT",{maximumFractionDigits:0});
 
 function apply(){
   const q=fold($("#q").value.trim());
@@ -211,7 +333,7 @@ function apply(){
   else if(s==="pa"||s==="pd"){
     const dir=s==="pa"?1:-1;
     view.sort((a,b)=>{
-      const x=priceNum(a.p),y=priceNum(b.p);
+      const x=eurOf(a),y=eurOf(b);
       if(isNaN(x)&&isNaN(y))return 0;
       if(isNaN(x))return 1;
       if(isNaN(y))return -1;
@@ -246,7 +368,11 @@ function renderMore(){
 function card(it){
   const a=document.createElement("a");
   a.className="card";
-  a.href=it.u; a.target="_blank"; a.rel="noopener noreferrer";
+  a.href=rawUrl(it); a.target="_blank"; a.rel="noopener noreferrer";
+  a.addEventListener("click",e=>{
+    if(e.ctrlKey||e.metaKey||e.shiftKey||e.button===1) return;
+    e.preventDefault(); openModal(it);
+  });
   const initials=it.n.replace(/[^A-Za-z0-9 ]/g,"").split(" ").filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?";
   const t=document.createElement("div");
   t.className="thumb";
@@ -256,6 +382,7 @@ function card(it){
     img.loading="lazy"; img.decoding="async"; img.referrerPolicy="no-referrer";
     img.alt="";
     img.onerror=()=>img.remove();
+    img.onload=()=>{const ph=t.querySelector(".ph"); if(ph) ph.remove();};
     img.src=it.i;
     t.appendChild(img);
   }
@@ -263,10 +390,108 @@ function card(it){
   b.className="card-body";
   const nm=document.createElement("div"); nm.className="name"; nm.textContent=it.n;
   const meta=document.createElement("div"); meta.className="meta";
-  const pr=document.createElement("span"); pr.className="price"; pr.textContent=it.p||"";
+  const pr=document.createElement("span"); pr.className="price";
+  const eur=eurOf(it);
+  pr.textContent=isNaN(eur)?(it.p||""):fmtEUR(eur);
   const sc=document.createElement("span"); sc.className="src"; sc.textContent=it.s;
   meta.append(pr,sc); b.append(nm,meta); a.append(t,b);
   return a;
+}
+
+/* ---------- Produktseite ---------- */
+function openModal(it){
+  const back=document.createElement("div");
+  back.className="modal-back";
+  const hasRef=!!it.pf;
+  const eur=eurOf(it);
+  const cny=isNaN(eur)?NaN:eur*RATES.CNY;
+  const raw=rawUrl(it);
+
+  const m=document.createElement("div");
+  m.className="modal";
+  m.setAttribute("role","dialog");
+  m.setAttribute("aria-label",it.n);
+
+  const close=document.createElement("button");
+  close.className="modal-close"; close.textContent="×";
+  close.setAttribute("aria-label","Schliessen");
+
+  const grid=document.createElement("div"); grid.className="modal-grid";
+  const imgBox=document.createElement("div"); imgBox.className="modal-img";
+  if(it.i){
+    const img=document.createElement("img");
+    img.alt=""; img.referrerPolicy="no-referrer";
+    img.onerror=()=>{img.remove();imgBox.innerHTML='<div class="ph">'+(it.b||"?").slice(0,2).toUpperCase()+"</div>";};
+    img.src=it.i;
+    imgBox.appendChild(img);
+  }else{
+    imgBox.innerHTML='<div class="ph">'+(it.b||it.n).slice(0,2).toUpperCase()+"</div>";
+  }
+
+  const info=document.createElement("div"); info.className="modal-info";
+  const brand=document.createElement("div"); brand.className="modal-brand";
+  brand.textContent=it.b||"Ohne Marke";
+  const name=document.createElement("div"); name.className="modal-name"; name.textContent=it.n;
+  const price=document.createElement("div"); price.className="modal-price";
+  if(!isNaN(eur)){
+    price.innerHTML='<span class="eur">'+fmtEUR(eur)+'</span><span class="cny">'+fmtCNY(cny)+"</span>";
+  }else if(it.p){
+    price.innerHTML='<span class="eur" style="font-size:18px">'+it.p+"</span>";
+  }else{
+    price.innerHTML='<span class="cny">Preis in der Quelle nicht angegeben</span>';
+  }
+  const meta=document.createElement("div"); meta.className="modal-meta";
+  meta.textContent=[it.c,it.s,it.t].filter(Boolean).join("  ·  ");
+
+  info.append(brand,name,price,meta);
+
+  if(raw){
+    const sec0=document.createElement("div"); sec0.className="mod-sec";
+    sec0.textContent=it.pf==="wd"?"Original (Weidian)":it.pf==="tb"?"Original (Taobao)":it.pf==="al"?"Original (1688)":"Original-Link";
+    const ob=document.createElement("a");
+    ob.className="orig-btn"; ob.href=raw; ob.target="_blank"; ob.rel="noopener noreferrer";
+    ob.textContent="Produkt öffnen";
+    info.append(sec0,ob);
+  }
+
+  const secA=document.createElement("div"); secA.className="mod-sec"; secA.textContent="Bei Agent öffnen";
+  const lg=document.createElement("div"); lg.className="linkgrid";
+  for(const ag of AGENTS){
+    const tpl=hasRef?(ag.t[it.pf]||ag.t["*"]):(raw?ag.t["*"]:null);
+    if(!tpl) continue;
+    const a=document.createElement("a");
+    a.href=fill(tpl,it); a.target="_blank"; a.rel="noopener noreferrer";
+    a.textContent=ag.n;
+    lg.appendChild(a);
+  }
+  info.append(secA,lg);
+
+  if(raw){
+    const secQ=document.createElement("div"); secQ.className="mod-sec"; secQ.textContent="QC-Fotos suchen";
+    const qg=document.createElement("div"); qg.className="linkgrid";
+    for(const q of QCDBS){
+      const tpl=hasRef?(q.t[it.pf]||q.t["*"]):q.t["*"];
+      if(!tpl) continue;
+      const a=document.createElement("a");
+      a.href=fill(tpl,it); a.target="_blank"; a.rel="noopener noreferrer";
+      a.textContent=q.n;
+      qg.appendChild(a);
+    }
+    info.append(secQ,qg);
+  }
+
+  grid.append(imgBox,info);
+  m.append(close,grid);
+  back.appendChild(m);
+  document.body.appendChild(back);
+  document.body.classList.add("modal-open");
+
+  const dispose=()=>{back.remove();document.body.classList.remove("modal-open");document.removeEventListener("keydown",esc);};
+  const esc=e=>{if(e.key==="Escape")dispose();};
+  close.addEventListener("click",dispose);
+  back.addEventListener("click",e=>{if(e.target===back)dispose();});
+  document.addEventListener("keydown",esc);
+  close.focus();
 }
 
 function buildFilters(){
@@ -305,8 +530,20 @@ $("#more").addEventListener("click",renderMore);
 fetch("items.json")
   .then(r=>r.json())
   .then(d=>{
-    DATA=d;
-    for(const it of DATA) it._h=fold(it.n+" "+it.c+" "+it.s+" "+(it.t||""));
+    DATA=Array.isArray(d)?d:d.items;
+    const M=d.meta||{};
+    if(M.rates) RATES=M.rates;
+    if(M.sources){
+      for(const it of DATA){
+        it.s=M.sources[it.s]??it.s;
+        it.c=M.cats[it.c]??it.c;
+        if(it.i&&/^\d:/.test(it.i)){
+          const k=it.i.indexOf(":");
+          it.i=M.iprefix[+it.i.slice(0,k)]+it.i.slice(k+1);
+        }
+      }
+    }
+    for(const it of DATA) it._h=fold(it.n+" "+(it.b||"")+" "+it.c+" "+it.s+" "+(it.t||""));
     $("#loading").hidden=true;
     buildFilters();
     apply();
