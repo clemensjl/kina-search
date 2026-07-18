@@ -43,6 +43,11 @@ export async function ensureSchema() {
     name text not null,
     created_at timestamptz not null default now()
   )`;
+  await q`create table if not exists user_prefs (
+    user_email text primary key,
+    currency text not null default 'EUR',
+    updated_at timestamptz not null default now()
+  )`;
   await q`create table if not exists collection_items (
     collection_id uuid not null references collections(id) on delete cascade,
     item_key text not null,

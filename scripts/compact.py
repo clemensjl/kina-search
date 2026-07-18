@@ -1,8 +1,8 @@
 """Letzter Build-Schritt: items.json kompaktieren.
 
-- Quelle/Kategorie als Index in meta.sources/meta.cats
+- Kategorie als Index in meta.cats
 - Bild-URLs ueber Praefix-Tabelle meta.iprefix ("<n>:<rest>")
-- Tab-Feld faellt weg (nur fuer Parsing/Debug relevant)
+- Quelle (s) und Tab (t) fallen weg: Herkunfts-Spreadsheets bleiben intern
 """
 import json
 from collections import Counter
@@ -17,9 +17,7 @@ def main():
     items = data["items"]
     meta = data["meta"]
 
-    sources = sorted({it["s"] for it in items})
     cats = sorted({it["c"] for it in items})
-    s_idx = {s: i for i, s in enumerate(sources)}
     c_idx = {c: i for i, c in enumerate(cats)}
 
     # haeufigste Bild-URL-Praefixe (bis einschliesslich letztem '/')
@@ -32,23 +30,23 @@ def main():
     p_idx = {p: i for i, p in enumerate(iprefix)}
 
     for it in items:
-        it["s"] = s_idx[it["s"]]
-        it["c"] = c_idx[it["c"]]
+        it.pop("s", None)
         it.pop("t", None)
+        it["c"] = c_idx[it["c"]]
         i = it.get("i") or ""
         if "/" in i:
             p = i[: i.rindex("/") + 1]
             if p in p_idx:
                 it["i"] = f"{p_idx[p]}:{i[len(p):]}"
 
-    meta["sources"] = sources
+    meta.pop("sources", None)
     meta["cats"] = cats
     meta["iprefix"] = iprefix
     ITEMS.write_text(
         json.dumps({"meta": meta, "items": items}, ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8",
     )
-    print(f"kompaktiert: {len(items)} items, {len(sources)} Quellen -> {ITEMS.stat().st_size // 1024 // 1024} MB")
+    print(f"kompaktiert: {len(items)} items -> {ITEMS.stat().st_size // 1024 // 1024} MB")
 
 
 if __name__ == "__main__":

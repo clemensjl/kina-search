@@ -36,6 +36,14 @@ PRICE_RE = re.compile(
 HYPERLINK_RE = re.compile(r'HYPERLINK\(\s*""?"?([^"]+?)""?"?\s*[,)]', re.I)
 IMAGE_RE = re.compile(r'IMAGE\(\s*""?"?(https?://[^"]+?)""?"?\s*[,)]', re.I)
 URL_RE = re.compile(r"https?://[^\s\"'<>)]+")
+# Video-Thumbnails und UI-Icons sind keine Produktbilder
+BAD_IMG_RE = re.compile(r"ytimg\.com|youtube\.com|youtu\.be|gstatic\.com/docs|/branding/", re.I)
+
+
+def clean_img(url):
+    if not url or BAD_IMG_RE.search(url):
+        return None
+    return url
 
 AGENTS = (
     "kakobuy|sugargoo|cnfans|mulebuy|acbuy|superbuy|cssbuy|hipobuy|joyagoo|pandabuy|"
@@ -52,6 +60,21 @@ NOISE_NAME = re.compile(
     r"discord|instagram|tiktok|youtube|reddit|sign up|coupon|tutorial|how to|join|follow|subscribe|free \$|% off|click here|spreadsheet|ctrl\s*\+\s*f|telegram|whatsapp|converter",
     re.I,
 )
+
+# Eindeutige Produkttyp-Woerter schlagen Marken-Proxys und Tab-Namen
+STRONG_TYPES = [
+    ("Shirts & Tees", r"\btees?\b|t-?shirts?\b|\bshirts?\b|\bpolos?\b|longsleeve|long sleeve|\bvests?\b|tank top"),
+    ("Hoodies & Sweater", r"hoodies?\b|sweaters?\b|sweatshirts?\b|crewnecks?\b|zip.?ups?\b|cardigans?\b|pullovers?\b|fleece\b"),
+    ("Jacken", r"jackets?\b|puffers?\b|\bcoats?\b|parkas?\b|windbreakers?\b|varsity|bombers?\b"),
+    ("Hosen & Shorts", r"\bpants\b|\bjeans\b|\bshorts\b|sweatpants?\b|trousers?\b|cargos?\b|tracksuits?\b|joggers?\b|boxers?\b"),
+    ("Trikots", r"jerseys?\b|trikots?\b"),
+    ("Taschen", r"\bbags?\b|backpacks?\b|totes?\b|crossbody|messengers?\b|duffle|wallets?\b|cardholders?\b"),
+    ("Uhren", r"\bwatch\b|\bwatches\b"),
+    ("Schuhe", r"\bshoes?\b|sneakers?\b|\bslides?\b|slippers?\b|sandals?\b|\bboots?\b|loafers?\b|trainers?\b|\bdunks?\b|\bheels?\b|\bcleats?\b"),
+    ("Parfum", r"parfums?\b|perfumes?\b|colognes?\b|fragrances?\b"),
+    ("Schmuck & Accessoires", r"necklaces?\b|pendants?\b|bracelets?\b|earrings?\b|\bbelts?\b|\bcaps?\b|beanies?\b|sunglass|\bsocks?\b|\brings?\b|scarf|scarves"),
+]
+STRONG_TYPES_C = [(c, re.compile(p, re.I)) for c, p in STRONG_TYPES]
 
 CATEGORIES = [
     ("Schuhe", r"shoe|sneaker|slide|slipper|sandal|boot|loafer|trainer|dunk|jordan|\baj\d|af1|airmax|air max|yeezy|new balance|bapesta|\bsb\b|foam|croc|heel|mule|birkenstock|samba|gazelle|campus|3xl|b30|b22|b27|tabi"),
@@ -78,6 +101,7 @@ BRANDS = [
     ("Chrome Hearts", r"chrome hearts?"),
     ("Vivienne Westwood", r"vivienne|westwood"),
     ("New Balance", r"new balance|\bnb\d{3,4}\b"),
+    ("LEGO", r"\blego\b"),
     ("Maison Margiela", r"margiela|\bmm6\b|tabi"),
     ("Canada Goose", r"canada goose"),
     ("Dr. Martens", r"dr\.? ?martens"),
@@ -90,7 +114,7 @@ BRANDS = [
     ("Audemars Piguet", r"audemars|royal oak|\bap\b"),
     ("Patek Philippe", r"patek|nautilus"),
     ("Richard Mille", r"richard mille|richards?\b"),
-    ("Rolex", r"rolex|relox|\brol\b|daytona|datejust|submariner"),
+    ("Rolex", r"rolex|relox|daytona|datejust|submariner"),
     ("Tom Ford", r"tom ford"),
     ("Bottega Veneta", r"bottega"),
     ("Saint Laurent", r"saint laurent|\bysl\b"),
@@ -152,7 +176,6 @@ BRANDS = [
     ("Samsung", r"samsung"),
     ("Beats", r"\bbeats\b"),
     ("Marshall", r"marshall"),
-    ("LEGO", r"\blego\b"),
 ]
 BRANDS_C = [(name, re.compile(pat, re.I)) for name, pat in BRANDS]
 
@@ -282,8 +305,15 @@ def parse_price(p):
     return v, CUR_SYM.get(cur, "USD")
 
 
-def categorize(*texts):
-    blob = " ".join(t.lower() for t in texts if t)
+def categorize(tab_name, section, name):
+    """Prioritaet: Produkttyp im Namen > Typ in Sektion/Tab > Marken-Proxys."""
+    for text in (name, section, tab_name):
+        if not text:
+            continue
+        for cat, rx in STRONG_TYPES_C:
+            if rx.search(text):
+                return cat
+    blob = " ".join(t for t in (name, section, tab_name) if t).lower()
     for cat, pat in CATEGORIES:
         if re.search(pat, blob):
             return cat
@@ -432,7 +462,7 @@ def grid_from_html(path):
             row.append({
                 "text": norm_text(td.get_text(" ")),
                 "url": url,
-                "img": img["src"] if img else None,
+                "img": clean_img(img["src"]) if img else None,
             })
         if row:
             grid.append(row)
@@ -460,7 +490,7 @@ def grid_from_xlsx(path):
                     if m := HYPERLINK_RE.search(v):
                         url = htmllib.unescape(m.group(1).replace('""', '"'))
                     if m := IMAGE_RE.search(v):
-                        img = m.group(1).replace('""', '"')
+                        img = clean_img(m.group(1).replace('""', '"'))
                     if not v.startswith("="):
                         text = norm_text(v)
                         if not url and (m := URL_RE.search(v)):
@@ -539,6 +569,27 @@ def main():
             continue
         seen[key] = it
         unique.append(it)
+
+    # Zweite Dedup-Stufe: exakt gleicher Name = eine Karte, QUELLEN-UEBERGREIFEND
+    # (Duplikate aus verschiedenen Sheets verschmelzen; fehlende Felder auffuellen)
+    seen2 = {}
+    deduped = []
+    for it in unique:
+        key2 = re.sub(r"\s+", " ", it["n"].lower()).strip()
+        if key2 in seen2:
+            prev = seen2[key2]
+            if not prev["i"] and it["i"]:
+                prev["i"] = it["i"]
+            if "pv" not in prev and "pv" in it:
+                prev["pv"], prev["pc"] = it["pv"], it["pc"]
+                prev.pop("p", None)
+            if prev["c"] == "Sonstiges" and it["c"] != "Sonstiges":
+                prev["c"] = it["c"]
+            continue
+        seen2[key2] = it
+        deduped.append(it)
+    print(f"name-dedup: {len(unique)} -> {len(deduped)}")
+    unique = deduped
 
     # Standard-Reihenfolge: Marke -> Name; markenlose ans Ende
     unique.sort(key=lambda it: (it["b"] == "", it["b"].lower(), it["n"].lower()))

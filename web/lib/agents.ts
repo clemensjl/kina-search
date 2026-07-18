@@ -2,7 +2,7 @@
 // {id} = Item-ID, {url} = urlencodierte Original-URL. pf: wd|tb|al
 
 export type Item = {
-  n: string; b?: string; c: string; i?: string; s: string;
+  n: string; b?: string; c: string; i?: string; s?: string;
   pf?: "wd" | "tb" | "al"; pid?: string; u?: string;
   pv?: number; pc?: string; p?: string;
   verified?: { rating: number; note?: string };

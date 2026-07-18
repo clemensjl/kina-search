@@ -6,7 +6,8 @@ export const DATA_BASE =
   process.env.NEXT_PUBLIC_DATA_URL || "https://clemensjl.github.io/kina-search";
 
 export type Rates = Record<string, number>;
-export type Db = { items: Item[]; rates: Rates; sources: string[]; cats: string[] };
+export type Db = { items: Item[]; rates: Rates; cats: string[] };
+export type Cur = "EUR" | "USD";
 
 const fold = (s: string) =>
   s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -18,10 +19,10 @@ export async function loadDb(): Promise<Db> {
   const items: Item[] = Array.isArray(d) ? d : d.items;
   const meta = d.meta || {};
   const rates: Rates = meta.rates || { CNY: 7.8, USD: 1.08, GBP: 0.85, EUR: 1 };
-  if (meta.sources) {
-    type RawItem = Omit<Item, "s" | "c"> & { s: number | string; c: number | string };
+  if (meta.cats) {
+    type RawItem = Omit<Item, "s" | "c"> & { s?: number | string; c: number | string };
     for (const it of items as unknown as RawItem[]) {
-      if (typeof it.s === "number") it.s = meta.sources[it.s] ?? String(it.s);
+      delete it.s;
       if (typeof it.c === "number") it.c = meta.cats[it.c] ?? String(it.c);
       if (it.i && /^\d:/.test(it.i)) {
         const k = it.i.indexOf(":");
@@ -30,16 +31,22 @@ export async function loadDb(): Promise<Db> {
       if (it.i && !it.i.startsWith("http")) it.i = `${DATA_BASE}/${it.i}`;
     }
   }
-  for (const it of items) it._h = fold(`${it.n} ${it.b || ""} ${it.c} ${it.s}`);
-  return { items, rates, sources: meta.sources || [], cats: meta.cats || [] };
+  for (const it of items) it._h = fold(`${it.n} ${it.b || ""} ${it.c}`);
+  return { items, rates, cats: meta.cats || [] };
 }
 
 export function eurOf(it: Item, rates: Rates): number {
   if (it.pv == null || !it.pc || !rates[it.pc]) return NaN;
   return it.pv / rates[it.pc];
 }
-export const fmtEUR = (v: number) =>
-  "€ " + v.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** Preis in der Nutzerwaehrung (EUR-Basis * Kurs). */
+export function curOf(it: Item, rates: Rates, cur: Cur): number {
+  const eur = eurOf(it, rates);
+  return cur === "EUR" ? eur : eur * (rates.USD || 1.08);
+}
+export const fmtCur = (v: number, cur: Cur) =>
+  (cur === "EUR" ? "€ " : "$ ") +
+  v.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const fmtCNY = (v: number) =>
   "¥ " + v.toLocaleString("de-AT", { maximumFractionDigits: 0 });
 export { fold };

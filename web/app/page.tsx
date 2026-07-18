@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AGENTS, QCDBS, agentLink, itemKey, rawUrl, type Item } from "@/lib/agents";
-import { eurOf, fmtCNY, fmtEUR, fold, loadDb, type Rates } from "@/lib/data";
+import { useSession } from "next-auth/react";
+import { curOf, eurOf, fmtCNY, fmtCur, fold, loadDb, type Cur, type Rates } from "@/lib/data";
 import UserBar from "@/components/UserBar";
 
 const BATCH = 120;
@@ -50,8 +51,10 @@ export default function Home() {
   const [q, setQ] = useState("");
   const [qLive, setQLive] = useState("");
   const [cat, setCat] = useState("");
-  const [src, setSrc] = useState("");
   const [sort, setSort] = useState("rel");
+  const [cur, setCur] = useState<Cur>("EUR");
+  const [askCur, setAskCur] = useState(false);
+  const { status: authStatus } = useSession();
   const [shown, setShown] = useState(BATCH);
   const [modal, setModal] = useState<Item | null>(null);
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
@@ -72,15 +75,15 @@ export default function Home() {
           extra = [
             ...ver.map((v) => ({
               n: v.name, b: "", c: v.category || VERIFIED, i: v.image_url || "",
-              s: VERIFIED, p: v.price || "", u: v.url, ...parseRef(v.url),
+              p: v.price || "", u: v.url, ...parseRef(v.url),
               verified: { rating: Number(v.rating), note: v.note || "" },
             })),
             ...subs.map((s) => ({
               n: s.name, b: "", c: s.category, i: s.image_url || "",
-              s: "Community", p: s.price || "", u: s.url, ...parseRef(s.url),
+              p: s.price || "", u: s.url, ...parseRef(s.url),
             })),
           ];
-          for (const it of extra) it._h = fold(`${it.n} ${it.c} ${it.s}`);
+          for (const it of extra) it._h = fold(`${it.n} ${it.c}`);
           const col = await fetch("/api/collections");
           if (col.ok) {
             const { items: ci } = (await col.json()) as { items: { item_key: string }[] };
@@ -101,7 +104,6 @@ export default function Home() {
     let v = items.filter((it) => {
       if (cat === VERIFIED) { if (!it.verified) return false; }
       else if (cat && it.c !== cat) return false;
-      if (src && it.s !== src) return false;
       if (toks.length) {
         const hay = it._h || "";
         for (const t of toks) if (!hay.includes(t)) return false;
@@ -120,9 +122,40 @@ export default function Home() {
       });
     }
     return v;
-  }, [items, qLive, cat, src, sort, rates]);
+  }, [items, qLive, cat, sort, rates]);
 
-  useEffect(() => { setShown(BATCH); }, [qLive, cat, src, sort]);
+  useEffect(() => { setShown(BATCH); }, [qLive, cat, sort]);
+
+  // Waehrungspraeferenz: localStorage sofort; eingeloggt aus DB; Erstlogin fragt
+  useEffect(() => {
+    const stored = localStorage.getItem("cur");
+    if (stored === "EUR" || stored === "USD") setCur(stored);
+    if (authStatus !== "authenticated") return;
+    (async () => {
+      const r = await fetch("/api/prefs");
+      if (!r.ok) return;
+      const { currency } = await r.json();
+      if (currency === "EUR" || currency === "USD") {
+        setCur(currency);
+        localStorage.setItem("cur", currency);
+      } else if (!stored) {
+        setAskCur(true);
+      }
+    })();
+  }, [authStatus]);
+
+  function chooseCur(c: Cur) {
+    setCur(c);
+    localStorage.setItem("cur", c);
+    setAskCur(false);
+    if (authStatus === "authenticated") {
+      fetch("/api/prefs", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ currency: c }),
+      });
+    }
+  }
 
   const onSearch = useCallback((val: string) => {
     setQ(val);
@@ -131,8 +164,13 @@ export default function Home() {
   }, []);
 
   const priceLabel = useCallback((it: Item): string => {
+    const v = curOf(it, rates, cur);
+    return isNaN(v) ? it.p || "" : fmtCur(v, cur);
+  }, [rates, cur]);
+
+  const cnyLabel = useCallback((it: Item): string => {
     const eur = eurOf(it, rates);
-    return isNaN(eur) ? it.p || "" : fmtEUR(eur);
+    return isNaN(eur) ? "" : fmtCNY(eur * rates.CNY);
   }, [rates]);
 
   async function toggleSave(it: Item) {
@@ -159,7 +197,6 @@ export default function Home() {
     const hasVerified = items.some((i) => i.verified);
     return CAT_ORDER.filter((c) => (c === VERIFIED ? hasVerified : present.has(c)));
   }, [items]);
-  const sources = useMemo(() => [...new Set(items.map((i) => i.s))].sort(), [items]);
 
   return (
     <>
@@ -175,9 +212,9 @@ export default function Home() {
           <div className="searchrow">
             <input id="q" type="search" placeholder="Suchen: Marke, Item, Kategorie …"
               autoComplete="off" value={q} onChange={(e) => onSearch(e.target.value)} />
-            <select value={src} onChange={(e) => setSrc(e.target.value)} aria-label="Quelle">
-              <option value="">Alle Quellen</option>
-              {sources.map((s) => <option key={s} value={s}>{s}</option>)}
+            <select value={cur} onChange={(e) => chooseCur(e.target.value as Cur)} aria-label="Währung">
+              <option value="EUR">€ Euro</option>
+              <option value="USD">$ Dollar</option>
             </select>
             <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sortierung">
               <option value="rel">Sortierung: Marke</option>
@@ -209,7 +246,7 @@ export default function Home() {
         {loaded && view.length > 0 && (
           <div id="grid">
             {view.slice(0, shown).map((it, i) => (
-              <Card key={itemKey(it) + i} it={it} price={priceLabel(it)}
+              <Card key={itemKey(it) + i} it={it} price={priceLabel(it)} cny={cnyLabel(it)}
                 saved={savedKeys.has(itemKey(it))}
                 onOpen={() => setModal(it)} onSave={() => toggleSave(it)} />
             ))}
@@ -221,18 +258,34 @@ export default function Home() {
       </main>
 
       <footer className="site">
-        Kina Search – aggregiert aus 75 Spreadsheets plus Community-Einreichungen.
-        Preise wie in der Quelle angegeben, ohne Gewähr. Links öffnen extern.
+        Kina Search – Preise umgerechnet zum Tageskurs, ohne Gewähr. Links öffnen extern.
       </footer>
 
-      {modal && <Modal it={modal} rates={rates} saved={savedKeys.has(itemKey(modal))}
+      {askCur && (
+        <div className="modal-back">
+          <div className="modal" style={{ maxWidth: 420 }}>
+            <div className="modal-info">
+              <div className="modal-name">Preise anzeigen in …</div>
+              <p className="sub" style={{ marginBottom: 16 }}>
+                Kannst du jederzeit oben in der Leiste ändern. Yuan (¥) wird immer zusätzlich angezeigt.
+              </p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn" onClick={() => chooseCur("EUR")}>€ Euro</button>
+                <button className="btn ghost" onClick={() => chooseCur("USD")}>$ Dollar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modal && <Modal it={modal} rates={rates} cur={cur} saved={savedKeys.has(itemKey(modal))}
         onSave={() => toggleSave(modal)} onClose={() => setModal(null)} />}
     </>
   );
 }
 
-function Card({ it, price, saved, onOpen, onSave }: {
-  it: Item; price: string; saved: boolean; onOpen: () => void; onSave: () => void;
+function Card({ it, price, cny, saved, onOpen, onSave }: {
+  it: Item; price: string; cny: string; saved: boolean; onOpen: () => void; onSave: () => void;
 }) {
   const initials = (it.b || it.n).replace(/[^A-Za-z0-9 ]/g, "").split(" ")
     .filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
@@ -260,15 +313,15 @@ function Card({ it, price, saved, onOpen, onSave }: {
         <div className="name">{it.n}</div>
         <div className="meta">
           <span className="price">{price}</span>
-          <span className="src">{it.s}</span>
+          <span className="src">{cny}</span>
         </div>
       </div>
     </a>
   );
 }
 
-function Modal({ it, rates, saved, onSave, onClose }: {
-  it: Item; rates: Rates; saved: boolean; onSave: () => void; onClose: () => void;
+function Modal({ it, rates, cur, saved, onSave, onClose }: {
+  it: Item; rates: Rates; cur: Cur; saved: boolean; onSave: () => void; onClose: () => void;
 }) {
   useEffect(() => {
     document.body.classList.add("modal-open");
@@ -281,6 +334,7 @@ function Modal({ it, rates, saved, onSave, onClose }: {
   }, [onClose]);
 
   const eur = eurOf(it, rates);
+  const val = curOf(it, rates, cur);
   const raw = rawUrl(it);
   const platLabel = it.pf === "wd" ? "Original (Weidian)" : it.pf === "tb" ? "Original (Taobao)"
     : it.pf === "al" ? "Original (1688)" : "Original-Link";
@@ -304,16 +358,16 @@ function Modal({ it, rates, saved, onSave, onClose }: {
             <div className="modal-price">
               {!isNaN(eur) ? (
                 <>
-                  <span className="eur">{fmtEUR(eur)}</span>
+                  <span className="eur">{fmtCur(val, cur)}</span>
                   <span className="cny">{fmtCNY(eur * rates.CNY)}</span>
                 </>
               ) : it.p ? (
                 <span className="eur" style={{ fontSize: 18 }}>{it.p}</span>
               ) : (
-                <span className="cny">Preis in der Quelle nicht angegeben</span>
+                <span className="cny">Kein Preis angegeben</span>
               )}
             </div>
-            <div className="modal-meta">{[it.c, it.s].filter(Boolean).join("  ·  ")}</div>
+            <div className="modal-meta">{it.c}</div>
             {it.verified && (
               <div className="vnote">
                 <div className="vr">★ {it.verified.rating.toFixed(1)} / 10 – von uns getestet</div>
