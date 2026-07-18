@@ -1,0 +1,34 @@
+# Alle Spreadsheet-Quellen. Neue Quelle = neue Zeile mit id, dann scripts/build.ps1.
+# type: gsheet (default, natives Google Sheet, muss oeffentlich lesbar sein)
+#       drive_xlsx (hochgeladene xlsx-Datei in Drive)
+# Nicht oeffentliche Sheets: als xlsx herunterladen und in data/manual/ legen.
+sources:
+  - id: 1_IYtkEueNWqA_iMDcSjML0to1T4jVWdK-nszQuADUKQ
+    name: "Xera's Spreadsheet"
+  - id: 1vqVcK4sdyplkRumXzH-7TOnwhL6DOgqg0ngI9f2fo2g
+    name: "Little Whale"
+  - id: 1rfnDD0hDm5pxpxk5jGYC9W4OXUhcSgJaA-RP1sAqd4E
+    name: "GillyREPS MEGA 2026"
+  - id: 1x4P02VnBXUFl5Tu9BfKN9tHj6lvN76gaJ3rz_YtJkdY
+    name: "credcal (mbuy)"
+  - id: 172_BzUCSKcEH-ahx-DgRpJHCm0JnxveJoCaOhvBeoKU
+    name: "Best Kakobuy"
+  - id: 1PpSitaGL_oIfV4xkuSslQcaNbXvSqs-P4oHC4xlRCVo
+    name: "Repia"
+  - id: 1zIuW-OmKykplXyfoVeN7dmWA2Y4A1gLF
+    name: "GILLYS MEGA FINDS"
+    type: drive_xlsx
+
+# Gesperrt (Login noetig, kein oeffentlicher Zugriff) - manuell als xlsx nach data/manual/:
+#   1d0lK3WHIJnNHBmqoTVXXcY2JyqfeQEzE1NeEulx-AJQ
+#   1NcGuWEeQavIn4bBoe9zxkRVAUuvTqZVRazjlkLFBpBg
+#   1g4LGZkRk2XwVL9hw4y5GEX24kxWOh1kkGhLW7OR00As
+#   1h80VQ2hjGHX4s3VpxUBuczqDjWSY2VqJSmHMCroaGLY
+#   12AwSU4PKth8kuzhQ3wK7U7l3isLqG94-RkxX3774YCM
+#   1c2sM6Sjjgbjnqq7QOUQ8WkjV2vgI9qJZHAKsxcY6_ks
+#   1jBRBT7D0xiDyUGvH9KvD1hSgZGhNkOTkk1z2qQfgijk
+#   1ygFkjmTsW5VRIqzdEeTnSf2C_VFhMNq0FxZSkcm9xIQ
+#   1winy_1OJxHJKhkqdqAy5m8ik-qMrz4N23p9m2eOHWCI
+#   1ybRf4KOgtIptWbjlRPW97ymVLxV6vyuBMhSkk48znCA
+#   1ypdWVII6kxqRiqWwMLrWnTUAFPZ-UZPpzo5zVVNpPOM
+#   1wqr_udTOVjZZSryshvbUcrZLSBWvIUXilwPscNDlfJg
