@@ -1,57 +1,54 @@
 "use client";
-import { useEffect, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { useCallback, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 type Col = { id: string; name: string };
 type Ci = { collection_id: string; item_key: string; item_name: string | null; item_image: string | null; item_price: string | null };
 
 export default function Collections() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
+  const { status } = useSession();
   const [cols, setCols] = useState<Col[]>([]);
   const [items, setItems] = useState<Ci[]>([]);
   const [newName, setNewName] = useState("");
 
-  useEffect(() => {
-    const sb = supabaseBrowser();
-    sb.auth.getUser().then(async ({ data }) => {
-      setAuthed(!!data.user);
-      if (data.user) refresh();
-    });
+  const refresh = useCallback(async () => {
+    const r = await fetch("/api/collections");
+    if (!r.ok) return;
+    const d = await r.json();
+    setCols(d.collections);
+    setItems(d.items);
   }, []);
 
-  async function refresh() {
-    const sb = supabaseBrowser();
-    const [{ data: c }, { data: ci }] = await Promise.all([
-      sb.from("collections").select("id,name").order("created_at"),
-      sb.from("collection_items").select("*").order("added_at", { ascending: false }),
-    ]);
-    setCols((c as Col[]) || []);
-    setItems((ci as Ci[]) || []);
-  }
+  useEffect(() => { if (status === "authenticated") refresh(); }, [status, refresh]);
 
   async function addCol(e: React.FormEvent) {
     e.preventDefault();
-    const sb = supabaseBrowser();
-    const { data: auth } = await sb.auth.getUser();
-    if (!auth.user || !newName.trim()) return;
-    await sb.from("collections").insert({ user_id: auth.user.id, name: newName.trim() });
+    if (!newName.trim()) return;
+    await fetch("/api/collections", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: newName.trim() }),
+    });
     setNewName("");
     refresh();
   }
 
   async function removeItem(colId: string, key: string) {
-    await supabaseBrowser().from("collection_items").delete()
-      .eq("collection_id", colId).eq("item_key", key);
+    await fetch("/api/collections/items", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ item_key: key }),
+    });
     setItems((p) => p.filter((i) => !(i.collection_id === colId && i.item_key === key)));
   }
 
   async function removeCol(id: string) {
-    await supabaseBrowser().from("collections").delete().eq("id", id);
+    await fetch(`/api/collections?id=${id}`, { method: "DELETE" });
     refresh();
   }
 
-  if (authed === null) return <main className="page"><div className="loading">Lade …</div></main>;
-  if (!authed) {
+  if (status === "loading") return <main className="page"><div className="loading">Lade …</div></main>;
+  if (status === "unauthenticated") {
     return (
       <main className="page">
         <h2>Collections</h2>
@@ -65,7 +62,8 @@ export default function Collections() {
       <h2>Collections</h2>
       <p className="sub">Deine gespeicherten Items, sortiert nach Liste.</p>
       <form onSubmit={addCol} style={{ display: "flex", gap: 8, marginBottom: 22 }}>
-        <input style={{ flex: 1 }} className="sel" placeholder="Neue Collection …" value={newName}
+        <input style={{ flex: 1, fontFamily: "var(--font-body)", fontSize: 15, padding: "10px 12px", border: "1.5px solid var(--line-strong)", borderRadius: 6 }}
+          placeholder="Neue Collection …" value={newName}
           maxLength={60} onChange={(e) => setNewName(e.target.value)} />
         <button className="btn ghost" type="submit">Anlegen</button>
       </form>
@@ -75,7 +73,7 @@ export default function Collections() {
           <section key={c.id} style={{ marginBottom: 28 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8 }}>
               <h2 style={{ fontSize: 20 }}>{c.name}</h2>
-              <span className="mt" style={{ color: "var(--muted)", fontSize: 12 }}>{ci.length} Items</span>
+              <span style={{ color: "var(--muted)", fontSize: 12, fontFamily: "var(--font-mono)" }}>{ci.length} Items</span>
               <button className="smallbtn" style={{ marginLeft: "auto" }} onClick={() => removeCol(c.id)}>
                 Collection löschen
               </button>

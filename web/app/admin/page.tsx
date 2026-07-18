@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { useCallback, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { isAdminEmail } from "@/components/UserBar";
 
 type Sub = {
@@ -13,60 +13,57 @@ const CATS = ["Schuhe", "Shirts & Tees", "Hoodies & Sweater", "Jacken", "Hosen &
   "Trikots", "Taschen", "Uhren", "Schmuck & Accessoires", "Parfum", "Elektronik", "Sonstiges"];
 
 export default function Admin() {
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const { data: session, status } = useSession();
+  const allowed = status === "authenticated" && isAdminEmail(session?.user?.email);
   const [pending, setPending] = useState<Sub[]>([]);
   const [verified, setVerified] = useState<Ver[]>([]);
   const [vform, setVform] = useState({ name: "", url: "", price: "", category: "Schuhe", image_url: "", rating: "8.0", note: "" });
   const [msg, setMsg] = useState("");
 
-  useEffect(() => {
-    const sb = supabaseBrowser();
-    sb.auth.getUser().then(async ({ data }) => {
-      const ok = isAdminEmail(data.user?.email);
-      setAllowed(ok);
-      if (ok) refresh();
-    });
+  const refresh = useCallback(async () => {
+    const [p, v] = await Promise.all([
+      fetch("/api/submissions?scope=pending").then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/verified").then((r) => (r.ok ? r.json() : [])),
+    ]);
+    setPending(p);
+    setVerified(v);
   }, []);
 
-  async function refresh() {
-    const sb = supabaseBrowser();
-    const [{ data: subs }, { data: ver }] = await Promise.all([
-      sb.from("submissions").select("*").eq("status", "pending").order("created_at"),
-      sb.from("verified_items").select("id,name,url,rating,category").order("created_at", { ascending: false }),
-    ]);
-    setPending((subs as Sub[]) || []);
-    setVerified((ver as Ver[]) || []);
-  }
+  useEffect(() => { if (allowed) refresh(); }, [allowed, refresh]);
 
   async function decide(id: string, status: "approved" | "rejected") {
-    const sb = supabaseBrowser();
-    const { error } = await sb.from("submissions")
-      .update({ status, reviewed_at: new Date().toISOString() }).eq("id", id);
-    if (error) { setMsg(error.message); return; }
+    const r = await fetch(`/api/submissions/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!r.ok) { setMsg("Aktion fehlgeschlagen."); return; }
     setPending((p) => p.filter((s) => s.id !== id));
   }
 
   async function addVerified(e: React.FormEvent) {
     e.preventDefault();
-    const sb = supabaseBrowser();
-    const { error } = await sb.from("verified_items").insert({
-      name: vform.name.trim(), url: vform.url.trim(),
-      price: vform.price.trim() || null, category: vform.category,
-      image_url: vform.image_url.trim() || null,
-      rating: parseFloat(vform.rating), note: vform.note.trim() || null,
+    const r = await fetch("/api/verified", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...vform, rating: parseFloat(vform.rating) }),
     });
-    if (error) { setMsg(error.message); return; }
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      setMsg(d.error || "Fehler beim Anlegen.");
+      return;
+    }
     setMsg("Verifiziertes Item angelegt.");
     setVform({ name: "", url: "", price: "", category: vform.category, image_url: "", rating: "8.0", note: "" });
     refresh();
   }
 
   async function removeVerified(id: string) {
-    await supabaseBrowser().from("verified_items").delete().eq("id", id);
+    await fetch(`/api/verified?id=${id}`, { method: "DELETE" });
     setVerified((p) => p.filter((v) => v.id !== id));
   }
 
-  if (allowed === null) return <main className="page"><div className="loading">Lade …</div></main>;
+  if (status === "loading") return <main className="page"><div className="loading">Lade …</div></main>;
   if (!allowed) {
     return (
       <main className="page">

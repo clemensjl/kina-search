@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AGENTS, QCDBS, agentLink, itemKey, rawUrl, type Item } from "@/lib/agents";
 import { eurOf, fmtCNY, fmtEUR, fold, loadDb, type Rates } from "@/lib/data";
-import { supabaseBrowser } from "@/lib/supabase/client";
 import UserBar from "@/components/UserBar";
 
 const BATCH = 120;
@@ -64,31 +63,30 @@ export default function Home() {
         const db = await loadDb();
         let extra: Item[] = [];
         try {
-          const sb = supabaseBrowser();
-          const [{ data: ver }, { data: subs }, { data: auth }] = await Promise.all([
-            sb.from("verified_items").select("*").order("created_at", { ascending: false }),
-            sb.from("submissions").select("*").eq("status", "approved").order("created_at", { ascending: false }),
-            sb.auth.getUser(),
+          type VerRow = { name: string; url: string; price?: string; category?: string; image_url?: string; rating: number; note?: string };
+          type SubRow = { name: string; url: string; price?: string; category: string; image_url?: string };
+          const [ver, subs] = await Promise.all([
+            fetch("/api/verified").then((r) => (r.ok ? (r.json() as Promise<VerRow[]>) : [])),
+            fetch("/api/submissions?scope=approved").then((r) => (r.ok ? (r.json() as Promise<SubRow[]>) : [])),
           ]);
           extra = [
-            ...(ver || []).map((v) => ({
-              n: v.name as string, b: "", c: (v.category as string) || VERIFIED,
-              i: (v.image_url as string) || "", s: VERIFIED, p: (v.price as string) || "",
-              u: v.url as string, ...parseRef(v.url as string),
-              verified: { rating: Number(v.rating), note: (v.note as string) || "" },
+            ...ver.map((v) => ({
+              n: v.name, b: "", c: v.category || VERIFIED, i: v.image_url || "",
+              s: VERIFIED, p: v.price || "", u: v.url, ...parseRef(v.url),
+              verified: { rating: Number(v.rating), note: v.note || "" },
             })),
-            ...(subs || []).map((s) => ({
-              n: s.name as string, b: "", c: s.category as string,
-              i: (s.image_url as string) || "", s: "Community", p: (s.price as string) || "",
-              u: s.url as string, ...parseRef(s.url as string),
+            ...subs.map((s) => ({
+              n: s.name, b: "", c: s.category, i: s.image_url || "",
+              s: "Community", p: s.price || "", u: s.url, ...parseRef(s.url),
             })),
           ];
           for (const it of extra) it._h = fold(`${it.n} ${it.c} ${it.s}`);
-          if (auth.user) {
-            const { data: ci } = await sb.from("collection_items").select("item_key");
-            setSavedKeys(new Set((ci || []).map((r) => r.item_key as string)));
+          const col = await fetch("/api/collections");
+          if (col.ok) {
+            const { items: ci } = (await col.json()) as { items: { item_key: string }[] };
+            setSavedKeys(new Set(ci.map((r) => r.item_key)));
           }
-        } catch { /* Supabase optional - statische Daten reichen */ }
+        } catch { /* User-Daten optional - statische Daten reichen */ }
         setItems([...extra, ...db.items]);
         setRates(db.rates);
         setLoaded(true);
@@ -138,27 +136,22 @@ export default function Home() {
   }, [rates]);
 
   async function toggleSave(it: Item) {
-    const sb = supabaseBrowser();
-    const { data: auth } = await sb.auth.getUser();
-    if (!auth.user) { window.location.href = "/login"; return; }
     const key = itemKey(it);
-    let { data: cols } = await sb.from("collections").select("id").order("created_at").limit(1);
-    if (!cols || cols.length === 0) {
-      const { data: created } = await sb.from("collections")
-        .insert({ user_id: auth.user.id, name: "Gespeichert" }).select("id");
-      if (!created?.length) return;
-      cols = created;
-    }
-    if (savedKeys.has(key)) {
-      await sb.from("collection_items").delete().eq("item_key", key);
-      setSavedKeys((p) => { const n = new Set(p); n.delete(key); return n; });
-    } else {
-      await sb.from("collection_items").insert({
-        collection_id: cols[0].id, item_key: key, item_name: it.n,
-        item_image: it.i || null, item_price: priceLabel(it) || null,
-      });
-      setSavedKeys((p) => new Set(p).add(key));
-    }
+    const r = await fetch("/api/collections/items", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        item_key: key, item_name: it.n, item_image: it.i || "", item_price: priceLabel(it),
+      }),
+    });
+    if (r.status === 401) { window.location.href = "/login"; return; }
+    if (!r.ok) return;
+    const { saved } = await r.json();
+    setSavedKeys((p) => {
+      const n = new Set(p);
+      if (saved) n.add(key); else n.delete(key);
+      return n;
+    });
   }
 
   const cats = useMemo(() => {

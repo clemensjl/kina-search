@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { useSession } from "next-auth/react";
 
 const CATS = ["Schuhe", "Shirts & Tees", "Hoodies & Sweater", "Jacken", "Hosen & Shorts",
   "Trikots", "Taschen", "Uhren", "Schmuck & Accessoires", "Parfum", "Elektronik", "Sonstiges"];
@@ -8,49 +8,41 @@ const CATS = ["Schuhe", "Shirts & Tees", "Hoodies & Sweater", "Jacken", "Hosen &
 type Sub = { id: string; name: string; url: string; status: string; created_at: string };
 
 export default function Submit() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
+  const { status } = useSession();
   const [mine, setMine] = useState<Sub[]>([]);
   const [form, setForm] = useState({ name: "", url: "", price: "", category: "Schuhe", image_url: "", note: "" });
   const [state, setState] = useState<"idle" | "ok" | "err">("idle");
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    const sb = supabaseBrowser();
-    sb.auth.getUser().then(async ({ data }) => {
-      setAuthed(!!data.user);
-      if (data.user) {
-        const { data: subs } = await sb.from("submissions")
-          .select("id,name,url,status,created_at")
-          .eq("user_id", data.user.id).order("created_at", { ascending: false }).limit(30);
-        setMine(subs || []);
-      }
-    });
-  }, []);
+    if (status === "authenticated") {
+      fetch("/api/submissions?scope=mine").then(async (r) => {
+        if (r.ok) setMine(await r.json());
+      });
+    }
+  }, [status]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const sb = supabaseBrowser();
-    const { data: auth } = await sb.auth.getUser();
-    if (!auth.user) { window.location.href = "/login"; return; }
-    const { error } = await sb.from("submissions").insert({
-      user_id: auth.user.id,
-      user_email: auth.user.email,
-      name: form.name.trim(),
-      url: form.url.trim(),
-      price: form.price.trim() || null,
-      category: form.category,
-      image_url: form.image_url.trim() || null,
-      note: form.note.trim() || null,
+    const r = await fetch("/api/submissions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(form),
     });
-    if (error) { setState("err"); setMsg(error.message); return; }
+    if (r.status === 401) { window.location.href = "/login"; return; }
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      setState("err"); setMsg(d.error || "Fehler beim Einreichen.");
+      return;
+    }
     setState("ok");
     setMsg("Eingereicht. Das Item erscheint, sobald es freigegeben wurde.");
     setMine((p) => [{ id: crypto.randomUUID(), name: form.name, url: form.url, status: "pending", created_at: new Date().toISOString() }, ...p]);
     setForm({ name: "", url: "", price: "", category: form.category, image_url: "", note: "" });
   }
 
-  if (authed === null) return <main className="page"><div className="loading">Lade …</div></main>;
-  if (!authed) {
+  if (status === "loading") return <main className="page"><div className="loading">Lade …</div></main>;
+  if (status === "unauthenticated") {
     return (
       <main className="page">
         <h2>Item einreichen</h2>
