@@ -206,6 +206,8 @@ footer{
   color:var(--ink);background:var(--card);white-space:nowrap;
 }
 .linkgrid a:hover{border-color:var(--stamp);color:var(--stamp)}
+.linkgrid a.fav{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:500}
+.linkgrid a.fav:hover{background:var(--stamp);border-color:var(--stamp);color:#fff}
 .orig-btn{
   display:inline-block;text-decoration:none;
   font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:15px;
@@ -261,11 +263,11 @@ const fold=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 
 /* Agent-Link-Templates: {id} = Item-ID, {url} = urlencodierte Original-URL.
    pf: wd=Weidian, tb=Taobao, al=1688 */
-/* Verifiziert Jul 2026 (cn-links/JadeShip/Live-Checks). CNFans: keine neuen
-   Weidian-Orders seit 01/26 — Buttons bleiben (QC/Historie weiter nutzbar). */
+/* Verifiziert Jul 2026 (cn-links/JadeShip/Live-Checks).
+   Litbuy = unser favorisierter Agent (fav). */
 const AGENTS=[
+  {n:"Litbuy",fav:true,t:{wd:"https://litbuy.com/products/details?id={id}&channel=WEIDIAN",tb:"https://litbuy.com/products/details?id={id}&channel=TAOBAO",al:"https://litbuy.com/products/details?id={id}&channel=1688"}},
   {n:"Kakobuy",t:{"*":"https://www.kakobuy.com/item/details?url={url}"}},
-  {n:"CNFans",t:{wd:"https://cnfans.com/product/?shop_type=weidian&id={id}",tb:"https://cnfans.com/product/?shop_type=taobao&id={id}",al:"https://cnfans.com/product/?shop_type=ali_1688&id={id}"}},
   {n:"ACBuy",t:{wd:"https://www.acbuy.com/product?id={id}&source=WD",tb:"https://www.acbuy.com/product?id={id}&source=TB",al:"https://www.acbuy.com/product?id={id}&source=AL"}},
   {n:"Mulebuy",t:{wd:"https://mulebuy.com/product/?shop_type=weidian&id={id}",tb:"https://mulebuy.com/product/?shop_type=taobao&id={id}",al:"https://mulebuy.com/product/?shop_type=ali_1688&id={id}"}},
   {n:"Oopbuy",t:{wd:"https://www.oopbuy.com/product/weidian/{id}",tb:"https://www.oopbuy.com/product/1/{id}",al:"https://www.oopbuy.com/product/0/{id}"}},
@@ -294,7 +296,7 @@ const QCDBS=[
   {n:"JadeShip",t:{wd:"https://www.jadeship.com/item/weidian/{id}",tb:"https://www.jadeship.com/item/taobao/{id}",al:"https://www.jadeship.com/item/1688/{id}"}},
   {n:"UUFinds",t:{"*":"https://www.uufinds.com/qc"}},
   {n:"Kakobuy QC",t:{"*":"https://www.kakobuy.com/item/details?url={url}"}},
-  {n:"CNFans QC",t:{wd:"https://cnfans.com/product/?shop_type=weidian&id={id}",tb:"https://cnfans.com/product/?shop_type=taobao&id={id}",al:"https://cnfans.com/product/?shop_type=ali_1688&id={id}"}},
+  {n:"Litbuy QC",t:{wd:"https://litbuy.com/products/details?id={id}&channel=WEIDIAN",tb:"https://litbuy.com/products/details?id={id}&channel=TAOBAO",al:"https://litbuy.com/products/details?id={id}&channel=1688"}},
   {n:"OOTDBuy QC",t:{wd:"https://www.ootdbuy.com/goods/details?id={id}&channel=weidian",tb:"https://www.ootdbuy.com/goods/details?id={id}&channel=taobao",al:"https://www.ootdbuy.com/goods/details?id={id}&channel=1688"}},
   {n:"FinderQC",t:{"*":"https://finderqc.com/"}},
 ];
@@ -462,6 +464,7 @@ function openModal(it){
     const a=document.createElement("a");
     a.href=fill(tpl,it); a.target="_blank"; a.rel="noopener noreferrer";
     a.textContent=ag.n;
+    if(ag.fav){a.classList.add("fav");a.textContent="★ "+ag.n;}
     lg.appendChild(a);
   }
   info.append(secA,lg);
