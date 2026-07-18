@@ -54,7 +54,7 @@ NOISE_NAME = re.compile(
 )
 
 CATEGORIES = [
-    ("Schuhe", r"shoe|sneaker|slide|boot|loafer|trainer|dunk|jordan|\baj\d|af1|airmax|air max|yeezy|new balance|bapesta|\bsb\b|foam|croc|heel|mule|birkenstock|samba|gazelle|campus|3xl|b30|b22|b27|tabi"),
+    ("Schuhe", r"shoe|sneaker|slide|slipper|sandal|boot|loafer|trainer|dunk|jordan|\baj\d|af1|airmax|air max|yeezy|new balance|bapesta|\bsb\b|foam|croc|heel|mule|birkenstock|samba|gazelle|campus|3xl|b30|b22|b27|tabi"),
     ("Trikots", r"jersey|jerseys|trikot|#\d+ |city edition|nba|nfl|soccer|football kit"),
     ("Shirts & Tees", r"\btee\b|tees|t-?shirt|shirt|polo|longsleeve|long sleeve|vest|tank"),
     ("Hoodies & Sweater", r"hoodie|sweater|sweatshirt|crewneck|zip|cardigan|knit|fleece|pullover"),
@@ -145,6 +145,8 @@ def good_name(t, cell=None):
         return False
     if re.fullmatch(r"\d+[.,]?\d*\s?(g|kg|ml|cm|mm)", t, re.I):
         return False
+    if re.fullmatch(r"\(?\s*\d*\s*\+?\s*(colou?r\s*ways?|colorways?|colou?rs?|styles?|versions?)\s*\)?", t, re.I):
+        return False
     return True
 
 
@@ -196,6 +198,7 @@ def extract_items(grid, source_name, tab_name):
                         break
             if not name:
                 continue
+            name = re.sub(r"^\d+\s*[、．.)]\s*", "", name).strip() or name
             # Preis: preisdominante Nachbarzellen, sonst Zeile drueber
             price = ""
             for j in range(max(0, idx - 4), min(len(row), idx + 5)):

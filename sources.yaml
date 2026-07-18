@@ -19,16 +19,29 @@ sources:
     name: "GILLYS MEGA FINDS"
     type: drive_xlsx
 
-# Gesperrt (Login noetig, kein oeffentlicher Zugriff) - manuell als xlsx nach data/manual/:
-#   1d0lK3WHIJnNHBmqoTVXXcY2JyqfeQEzE1NeEulx-AJQ
-#   1NcGuWEeQavIn4bBoe9zxkRVAUuvTqZVRazjlkLFBpBg
-#   1g4LGZkRk2XwVL9hw4y5GEX24kxWOh1kkGhLW7OR00As
-#   1h80VQ2hjGHX4s3VpxUBuczqDjWSY2VqJSmHMCroaGLY
-#   12AwSU4PKth8kuzhQ3wK7U7l3isLqG94-RkxX3774YCM
-#   1c2sM6Sjjgbjnqq7QOUQ8WkjV2vgI9qJZHAKsxcY6_ks
-#   1jBRBT7D0xiDyUGvH9KvD1hSgZGhNkOTkk1z2qQfgijk
-#   1ygFkjmTsW5VRIqzdEeTnSf2C_VFhMNq0FxZSkcm9xIQ
-#   1winy_1OJxHJKhkqdqAy5m8ik-qMrz4N23p9m2eOHWCI
-#   1ybRf4KOgtIptWbjlRPW97ymVLxV6vyuBMhSkk48znCA
-#   1ypdWVII6kxqRiqWwMLrWnTUAFPZ-UZPpzo5zVVNpPOM
-#   1wqr_udTOVjZZSryshvbUcrZLSBWvIUXilwPscNDlfJg
+# Login-gesperrte Sheets: laufen ueber die gespeicherte Browser-Session (auth: true).
+# Erster Lauf oeffnet ein Chrome-Fenster fuer den Google-Login.
+  - id: 1d0lK3WHIJnNHBmqoTVXXcY2JyqfeQEzE1NeEulx-AJQ
+    auth: true
+  - id: 1NcGuWEeQavIn4bBoe9zxkRVAUuvTqZVRazjlkLFBpBg
+    auth: true
+  - id: 1g4LGZkRk2XwVL9hw4y5GEX24kxWOh1kkGhLW7OR00As
+    auth: true
+  - id: 1h80VQ2hjGHX4s3VpxUBuczqDjWSY2VqJSmHMCroaGLY
+    auth: true
+  - id: 12AwSU4PKth8kuzhQ3wK7U7l3isLqG94-RkxX3774YCM
+    auth: true
+  - id: 1c2sM6Sjjgbjnqq7QOUQ8WkjV2vgI9qJZHAKsxcY6_ks
+    auth: true
+  - id: 1jBRBT7D0xiDyUGvH9KvD1hSgZGhNkOTkk1z2qQfgijk
+    auth: true
+  - id: 1ygFkjmTsW5VRIqzdEeTnSf2C_VFhMNq0FxZSkcm9xIQ
+    auth: true
+  - id: 1winy_1OJxHJKhkqdqAy5m8ik-qMrz4N23p9m2eOHWCI
+    auth: true
+  - id: 1ybRf4KOgtIptWbjlRPW97ymVLxV6vyuBMhSkk48znCA
+    auth: true
+  - id: 1ypdWVII6kxqRiqWwMLrWnTUAFPZ-UZPpzo5zVVNpPOM
+    auth: true
+  - id: 1wqr_udTOVjZZSryshvbUcrZLSBWvIUXilwPscNDlfJg
+    auth: true
