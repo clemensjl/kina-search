@@ -32,6 +32,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="de" className={`${disp.variable} ${body.variable} ${mono.variable}`}>
       <body>
+        <script dangerouslySetInnerHTML={{ __html:
+          `try{var p=JSON.parse(localStorage.getItem("prefs")||"{}");if(p.theme==="dark")document.documentElement.dataset.theme="dark";if(p.lang)document.documentElement.lang=p.lang}catch(e){}` }} />
         <Providers>{children}</Providers>
       </body>
     </html>

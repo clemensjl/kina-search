@@ -48,6 +48,9 @@ export async function ensureSchema() {
     currency text not null default 'EUR',
     updated_at timestamptz not null default now()
   )`;
+  await q`alter table user_prefs add column if not exists language text`;
+  await q`alter table user_prefs add column if not exists theme text`;
+  await q`alter table user_prefs add column if not exists agent text`;
   await q`create table if not exists collection_items (
     collection_id uuid not null references collections(id) on delete cascade,
     item_key text not null,

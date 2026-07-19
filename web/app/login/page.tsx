@@ -1,10 +1,13 @@
 "use client";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { usePrefs } from "@/components/Prefs";
 
 const MAGIC_ENABLED = process.env.NEXT_PUBLIC_MAGIC_LINK === "1";
 
 export default function Login() {
+  const { prefs } = usePrefs();
+  const en = prefs.lang === "en";
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sent" | "err">("idle");
   const [msg, setMsg] = useState("");
@@ -18,12 +21,13 @@ export default function Login() {
 
   return (
     <main className="page">
-      <h2>Anmelden</h2>
+      <h2>{en ? "Sign in" : "Anmelden"}</h2>
       <p className="sub">
-        Nur angemeldete Accounts können Items einreichen und Collections anlegen.
+        {en ? "Only signed-in accounts can submit items and create collections."
+            : "Nur angemeldete Accounts können Items einreichen und Collections anlegen."}
       </p>
       <button className="btn" onClick={() => signIn("google", { callbackUrl: "/" })}>
-        Mit Google anmelden
+        {en ? "Sign in with Google" : "Mit Google anmelden"}
       </button>
       {MAGIC_ENABLED ? (
         <>
@@ -43,10 +47,12 @@ export default function Login() {
         </>
       ) : (
         <p className="sub" style={{ marginTop: 16 }}>
-          Anmeldung per E-Mail-Link folgt in Kürze.
+          {en ? "Sign-in via email link coming soon." : "Anmeldung per E-Mail-Link folgt in Kürze."}
         </p>
       )}
-      <p className="sub" style={{ marginTop: 22 }}><a href="/">Zurück zur Suche</a></p>
+      <p className="sub" style={{ marginTop: 22 }}>
+        <a href="/">{en ? "Back to search" : "Zurück zur Suche"}</a>
+      </p>
     </main>
   );
 }
