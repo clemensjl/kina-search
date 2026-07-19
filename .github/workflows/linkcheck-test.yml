@@ -1,0 +1,14 @@
+name: Linkcheck IP-Test
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Weidian von Runner-IP testen
+        run: |
+          for id in 7593987998 9999999999999; do
+            code=$(curl -s -o /tmp/r.html -w "%{http_code}" -A "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" "https://weidian.com/item.html?itemID=$id")
+            size=$(wc -c < /tmp/r.html)
+            marker=$(grep -c "shopName" /tmp/r.html || true)
+            echo "id=$id http=$code bytes=$size shopName=$marker"
+          done
