@@ -80,8 +80,25 @@ def main():
             it["i"] = mapping[it["i"]]
     ITEMS.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
-    keep = {it["i"].removeprefix("thumbs/") for it in items if it["i"].startswith("thumbs/")}
+    # Referenzen einsammeln - auch kompakt-codierte Pfade ("<n>:<rest>" via
+    # meta.iprefix) dekodieren, sonst wird der komplette Thumb-Bestand als
+    # verwaist gewertet und geloescht (passiert am 19.07., aus Git restauriert)
+    iprefix = data.get("meta", {}).get("iprefix", []) if isinstance(data, dict) else []
+    keep = set()
+    for it in items:
+        p = it["i"] or ""
+        if p and p[0].isdigit() and ":" in p[:4]:
+            k = p.index(":")
+            try:
+                p = iprefix[int(p[:k])] + p[k + 1:]
+            except (ValueError, IndexError):
+                pass
+        if p.startswith("thumbs/"):
+            keep.add(p.removeprefix("thumbs/"))
     stale = [f for f in THUMBS.glob("*.webp") if f.name not in keep]
+    if keep and len(stale) > max(100, len(keep) // 10):
+        print(f"WARNUNG: {len(stale)} von {len(keep) + len(stale)} Thumbs waeren verwaist - Loeschung uebersprungen")
+        stale = []
     for f in stale:
         f.unlink()
     total_mb = sum(f.stat().st_size for f in THUMBS.glob("*.webp")) // 1024 // 1024
