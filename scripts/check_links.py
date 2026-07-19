@@ -39,6 +39,7 @@ meta: dict[str, dict] = {}
 counters = {"ok": 0, "dead": 0, "unknown": 0, "err_streak": 0}
 local = threading.local()
 cooldown_until = 0.0
+deadline = [float("inf")]
 
 
 def respect_cooldown():
@@ -109,6 +110,8 @@ def check(pid: str) -> str:
 
 
 def worker(pid: str):
+    if time.time() > deadline[0]:
+        return
     res = check(pid)
     with lock:
         status[f"wd:{pid}"] = res
@@ -118,7 +121,7 @@ def worker(pid: str):
         else:
             counters["err_streak"] = 0
         done = counters["ok"] + counters["dead"] + counters["unknown"]
-        if done % 1000 == 0:
+        if done % 200 == 0:
             STATUS.write_text(json.dumps(status), encoding="utf-8")
             META.write_text(json.dumps(meta), encoding="utf-8")
             print(f"  {done} geprueft: {counters['ok']} ok, {counters['dead']} tot, {counters['unknown']} unklar, {len(meta)} meta", flush=True)
@@ -133,7 +136,10 @@ def main():
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--shards", type=int, default=1)
     ap.add_argument("--out-prefix", default="")
+    ap.add_argument("--max-minutes", type=float, default=0)
     args = ap.parse_args()
+    if args.max_minutes > 0:
+        deadline[0] = time.time() + args.max_minutes * 60
     if args.out_prefix:
         STATUS = Path(args.out_prefix + "_status.json")
         META = Path(args.out_prefix + "_meta.json")

@@ -3,7 +3,7 @@ on: workflow_dispatch
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -14,10 +14,16 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install requests
-      - name: Shard crawlen
+      - name: Bisherigen Stand uebernehmen
         run: |
           mkdir -p out
-          python scripts/check_links.py --shard ${{ matrix.shard }} --shards 15 --out-prefix out/shard${{ matrix.shard }}
+          cp data/link_status.json out/shard${{ matrix.shard }}_status.json 2>/dev/null || true
+          cp data/item_meta.json out/shard${{ matrix.shard }}_meta.json 2>/dev/null || true
+      - name: Shard crawlen (25-min-Runde)
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          python scripts/check_links.py --shard ${{ matrix.shard }} --shards 15 --out-prefix out/shard${{ matrix.shard }} --max-minutes 22
       - uses: actions/upload-artifact@v4
         if: always()
         with:
