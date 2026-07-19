@@ -1,0 +1,53 @@
+name: Linkcheck autonom
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 */2 * * *"
+permissions:
+  contents: write
+concurrency:
+  group: linkcheck-auto
+  cancel-in-progress: false
+jobs:
+  crawl-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pillow
+      - name: Offene IDs zaehlen
+        id: todo
+        run: |
+          n=$(python - <<'EOF'
+          import json
+          st = json.load(open("data/link_status.json", encoding="utf-8"))
+          items = json.load(open("site/items.json", encoding="utf-8"))["items"]
+          pids = {i["pid"] for i in items if i.get("pf") == "wd" and i.get("pid")}
+          final = {k for k, v in st.items() if v in ("ok", "dead")}
+          print(sum(1 for p in pids if f"wd:{p}" not in final))
+          EOF
+          )
+          echo "count=$n" >> "$GITHUB_OUTPUT"
+          echo "Offen: $n"
+      - name: Crawlen (max 35 min)
+        if: steps.todo.outputs.count != '0'
+        run: python scripts/check_links.py --max-minutes 35
+      - name: Pipeline (enrich, thumbs, prune)
+        if: steps.todo.outputs.count != '0'
+        run: |
+          python scripts/enrich.py
+          python scripts/thumbs.py | tail -2
+          python scripts/prune_dead.py
+      - name: Ergebnis committen
+        if: steps.todo.outputs.count != '0'
+        run: |
+          git config user.name "linkcheck-bot"
+          git config user.email "actions@github.com"
+          git add -f data/link_status.json data/item_meta.json
+          git add site/items.json site/thumbs
+          git diff --cached --quiet || git commit -m "Linkcheck autonom: Zwischenstand"
+          git pull --rebase origin main
+          git push
