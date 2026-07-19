@@ -36,7 +36,7 @@ for ($round = 1; $round -le 6; $round++) {
     if ($m) { $todo = [int]$m.Matches[0].Groups[1].Value }
     if ($todo -ge 0 -and $todo -lt 400) { break }
 }
-Write-Output "=== Crawl fertig, TODO=$todo — starte Daten-Pipeline ==="
+Write-Output "=== Crawl fertig, TODO=$todo - starte Daten-Pipeline ==="
 
 python scripts/enrich.py
 python scripts/thumbs.py | Select-Object -Last 2
