@@ -126,9 +126,23 @@ def worker(pid: str):
 
 
 def main():
+    import argparse
+
+    global STATUS, META
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--shard", type=int, default=0)
+    ap.add_argument("--shards", type=int, default=1)
+    ap.add_argument("--out-prefix", default="")
+    args = ap.parse_args()
+    if args.out_prefix:
+        STATUS = Path(args.out_prefix + "_status.json")
+        META = Path(args.out_prefix + "_meta.json")
+
     data = json.loads(ITEMS.read_text(encoding="utf-8"))
     items = data["items"] if isinstance(data, dict) else data
     pids = sorted({it["pid"] for it in items if it.get("pf") == "wd" and it.get("pid")})
+    if args.shards > 1:
+        pids = pids[args.shard::args.shards]
     if META.exists():
         meta.update(json.loads(META.read_text(encoding="utf-8")))
     if STATUS.exists():
