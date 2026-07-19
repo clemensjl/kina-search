@@ -1,12 +1,15 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { usePrefs } from "@/components/Prefs";
 
 type Col = { id: string; name: string };
 type Ci = { collection_id: string; item_key: string; item_name: string | null; item_image: string | null; item_price: string | null };
 
 export default function Collections() {
   const { status } = useSession();
+  const { prefs } = usePrefs();
+  const en = prefs.lang === "en";
   const [cols, setCols] = useState<Col[]>([]);
   const [items, setItems] = useState<Ci[]>([]);
   const [newName, setNewName] = useState("");
@@ -47,12 +50,15 @@ export default function Collections() {
     refresh();
   }
 
-  if (status === "loading") return <main className="page"><div className="loading">Lade …</div></main>;
+  if (status === "loading") return <main className="page"><div className="loading">…</div></main>;
   if (status === "unauthenticated") {
     return (
       <main className="page">
         <h2>Collections</h2>
-        <div className="notice">Zum Speichern von Items musst du <a href="/login">angemeldet</a> sein.</div>
+        <div className="notice">
+          {en ? <>You need to <a href="/login">sign in</a> to save items.</>
+              : <>Zum Speichern von Items musst du <a href="/login">angemeldet</a> sein.</>}
+        </div>
       </main>
     );
   }
@@ -60,12 +66,12 @@ export default function Collections() {
   return (
     <main className="page" style={{ maxWidth: 860 }}>
       <h2>Collections</h2>
-      <p className="sub">Deine gespeicherten Items, sortiert nach Liste.</p>
+      <p className="sub">{en ? "Your saved items, grouped by list." : "Deine gespeicherten Items, sortiert nach Liste."}</p>
       <form onSubmit={addCol} style={{ display: "flex", gap: 8, marginBottom: 22 }}>
         <input style={{ flex: 1, fontFamily: "var(--font-body)", fontSize: 15, padding: "10px 12px", border: "1.5px solid var(--line-strong)", borderRadius: 6 }}
-          placeholder="Neue Collection …" value={newName}
+          placeholder={en ? "New collection …" : "Neue Collection …"} value={newName}
           maxLength={60} onChange={(e) => setNewName(e.target.value)} />
-        <button className="btn ghost" type="submit">Anlegen</button>
+        <button className="btn ghost" type="submit">{en ? "Create" : "Anlegen"}</button>
       </form>
       {cols.map((c) => {
         const ci = items.filter((i) => i.collection_id === c.id);
@@ -75,10 +81,14 @@ export default function Collections() {
               <h2 style={{ fontSize: 20 }}>{c.name}</h2>
               <span style={{ color: "var(--muted)", fontSize: 12, fontFamily: "var(--font-mono)" }}>{ci.length} Items</span>
               <button className="smallbtn" style={{ marginLeft: "auto" }} onClick={() => removeCol(c.id)}>
-                Collection löschen
+                {en ? "Delete collection" : "Collection löschen"}
               </button>
             </div>
-            {ci.length === 0 && <div className="notice">Noch leer – speichere Items über das + auf einer Produktkarte.</div>}
+            {ci.length === 0 && (
+              <div className="notice">
+                {en ? "Empty – save items via the + on any product card." : "Noch leer – speichere Items über das + auf einer Produktkarte."}
+              </div>
+            )}
             {ci.map((i) => (
               <div className="rowcard" key={i.item_key}>
                 {i.item_image && (
@@ -90,15 +100,17 @@ export default function Collections() {
                   <div className="mt">{i.item_price || ""}</div>
                 </div>
                 <div className="actions">
-                  <a className="smallbtn primary" href={`/?q=${encodeURIComponent(i.item_name || "")}`}>Suchen</a>
-                  <button className="smallbtn" onClick={() => removeItem(c.id, i.item_key)}>Entfernen</button>
+                  <a className="smallbtn primary" href={`/?item=${encodeURIComponent(i.item_key)}`}>{en ? "Open" : "Öffnen"}</a>
+                  <button className="smallbtn" onClick={() => removeItem(c.id, i.item_key)}>{en ? "Remove" : "Entfernen"}</button>
                 </div>
               </div>
             ))}
           </section>
         );
       })}
-      <p className="sub" style={{ marginTop: 22 }}><a href="/">Zurück zur Suche</a></p>
+      <p className="sub" style={{ marginTop: 22 }}>
+        <a href="/">{en ? "Back to search" : "Zurück zur Suche"}</a>
+      </p>
     </main>
   );
 }
